@@ -31,5 +31,6 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_DEPLOY_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "dist/*"
+          source: "dist/"
           target: "/www/wwwroot/admin.xbzhong.cn/"
+          rm: true
