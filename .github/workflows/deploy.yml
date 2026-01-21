@@ -4,6 +4,11 @@ on:
     branches:
      - main
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "dev"
 
 jobs:
   deploy:
@@ -12,7 +17,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ inputs.branch || github.ref_name }}
           fetch-depth: 1
 
       - name: Setup Node.js

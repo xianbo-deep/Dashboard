@@ -19,17 +19,19 @@ apiClient.interceptors.request.use(config => {
 // Response interceptor to unwrap data
 apiClient.interceptors.response.use(response => {
   const res = response.data;
-  if (res.code === 200) {
+  // 兼容 code=0 或 code=200 为成功状态
+  if (res.code === 200 || res.code === 0) {
     return res.data;
   } else {
-    if (res.code === 401) {
+    // 排除登录接口，避免登录失败时刷新页面
+    if (res.code === 401 && !response.config.url.includes('/login')) {
         localStorage.removeItem('token');
         window.location.href = '/login';
     }
     return Promise.reject(new Error(res.message || 'Error'));
   }
 }, error => {
-  if (error.response && error.response.status === 401) {
+  if (error.response && error.response.status === 401 && !(error.config && error.config.url.includes('/login'))) {
     localStorage.removeItem('token');
     window.location.href = '/login';
   }

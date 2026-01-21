@@ -30,7 +30,14 @@ const handleLogin = async () => {
   
   try {
     const data = await login(form.username, form.password);
-    localStorage.setItem('token', data.token);
+    // 兼容 data 本身是 token 字符串，或者包含 token 字段的情况
+    const token = typeof data === 'string' ? data : (data.token || data.accessToken);
+    
+    if (!token) {
+      throw new Error('登录失败：无法获取令牌');
+    }
+    
+    localStorage.setItem('token', token);
     router.push('/');
   } catch (err) {
     errorMessage.value = err.message || '登录失败，请检查用户名或密码';
