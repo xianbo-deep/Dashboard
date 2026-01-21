@@ -178,10 +178,10 @@ const initChart = (data) => {
       right: 0
     },
     grid: {
-      left: '0%',
-      right: '0%',
-      bottom: '0%',
-      top: '35',
+      left: '2%',
+      right: '2%',
+      bottom: '2%',
+      top: '40',
       containLabel: true
     },
     xAxis: {
@@ -194,6 +194,8 @@ const initChart = (data) => {
     },
     yAxis: {
       type: 'value',
+      min: 0,
+      minInterval: 1,
       splitLine: { show: true, lineStyle: { type: 'dashed', color: 'rgba(255, 255, 255, 0.04)' } },
       axisLabel: { color: '#86909C' },
       splitNumber: 3
@@ -365,10 +367,17 @@ const getActionColor = (action) => {
               <div class="feed-content">
                 <div class="feed-header">
                   <span class="feed-user">{{ item.user }}</span>
-                  <span class="feed-action">{{ item.action }} on</span>
-                  <span class="feed-target">{{ item.target }}</span>
+                  <span class="feed-action">{{ item.action }} in</span>
+                  <span class="feed-target" @click="openLink(item.url)">{{ item.target }}</span>
                   <span class="feed-time">{{ item.time }}</span>
                 </div>
+                
+                <!-- Reply Context -->
+                <div v-if="item.replyTo && item.replyTo.name && item.action === 'replied'" class="reply-context">
+                   <span class="replied-to">Replying to <span class="reply-name">@{{ item.replyTo.name }}</span>:</span>
+                   <div class="reply-quote">{{ item.replyTo.content }}</div>
+                </div>
+
                 <div class="feed-body">
                   <div v-if="item.type === 'reacted'" class="reaction-content">
                     {{ item.content }}
@@ -610,6 +619,30 @@ const getActionColor = (action) => {
 
 .reaction-content {
   font-size: 18px;
+}
+
+.reply-context {
+  margin: 4px 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid #4E5969;
+  border-radius: 0 4px 4px 0;
+  font-size: 12px;
+}
+.replied-to {
+  color: var(--color-text-3);
+  margin-bottom: 2px;
+  display: block;
+}
+.reply-name {
+  color: #165DFF;
+  font-weight: 500;
+}
+.reply-quote {
+  color: var(--color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .feed-tag {

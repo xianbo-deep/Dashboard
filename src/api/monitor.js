@@ -247,7 +247,13 @@ export function getCommentActivities() {
            target: item.path,
            content: item.content,
            time: item.time,
-           type: item.event_type
+           timestamp: item.timestamp,
+           type: item.event_type,
+           replyTo: {
+             name: item.replyToName,
+             avatar: item.replyToAvatar,
+             content: item.replyToContent
+           }
        }));
    });
 }
@@ -258,7 +264,7 @@ export function getInteractionTrend(days = 7) {
             date: item.date,
             comments: item.totalComments,
             replies: item.totalReplies,
-            reactions: item.totalResponses || item.totalReactions 
+            reactions: item.totalResponses // Matching struct json:"totalResponses"
         }));
     });
 }
