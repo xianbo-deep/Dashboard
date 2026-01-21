@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPageStats, getAnalysisTrend, getPageDetail } from '@/api/monitor';
+import { getPageStats, getAnalysisTrend, getPageDetail, getAnalysisMetrics, getRankings } from '@/api/monitor';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -67,7 +67,7 @@ const columns = [
 ];
 
 // --- Logic ---
-const initCharts = (trendData, pageData) => {
+const initCharts = (trendData, rankData) => {
   // Trend Chart
   const dates = trendData.map(i => i.date);
   const pvData = trendData.map(i => i.pv);
@@ -127,9 +127,9 @@ const initCharts = (trendData, pageData) => {
   };
 
   // Rank Chart (Top 10)
-  const sortedPages = [...pageData].sort((a, b) => b.pv - a.pv).slice(0, 10);
-  const paths = sortedPages.map(i => i.path);
-  const pvs = sortedPages.map(i => i.pv);
+  // rankData is expected to be from getRankings which returns { path, view_count }
+  const paths = rankData.map(i => i.path);
+  const pvs = rankData.map(i => i.view_count);
 
   rankOption.value = {
     backgroundColor: 'transparent',
@@ -185,25 +185,31 @@ const fetchData = async () => {
       const days = daysMap[timeRange.value] || 15;
       
       // Use real APIs
-      const trendData = await getAnalysisTrend(days);
-      const pageData = await getPageStats(days);
+      // 并行请求所有需要的数据
+      const [trendData, pageData, metricsData, rankData] = await Promise.all([
+          getAnalysisTrend(days),
+          getPageStats(days),        // 表格数据
+          getAnalysisMetrics(days),  // 统计指标
+          getRankings(days)          // 排行榜数据
+      ]);
 
-      // Update Metrics
-      const totalPv = pageData.reduce((acc, cur) => acc + cur.pv, 0);
-      const totalUv = pageData.reduce((acc, cur) => acc + cur.uv, 0);
-      const totalLatency = pageData.reduce((acc, cur) => acc + cur.avg_latency * cur.pv, 0);
-      
-      metrics.totalPv.value = totalPv;
-      metrics.totalUv.value = totalUv;
-      metrics.avgLatency.value = totalPv ? Math.round(totalLatency / totalPv) : 0;
+      // Update Metrics using dedicated API response
+      // Assuming metricsData structure corresponds to what backend returns (total_pv, total_uv, avg_latency)
+      // 根据通常的后端返回这里做一个简单适配，如果后端返回字段名不同请调整
+      metrics.totalPv.value = metricsData.total_pv || metricsData.pv || 0;
+      metrics.totalUv.value = metricsData.total_uv || metricsData.uv || 0;
+      metrics.avgLatency.value = Math.round(metricsData.avg_latency || 0);
+
+      // Trend or status logic remains similar for frontend visual
       metrics.avgLatency.status = metrics.avgLatency.value < 200 ? 'success' : metrics.avgLatency.value < 500 ? 'warning' : 'danger';
       
-      const topPage = [...pageData].sort((a, b) => b.pv - a.pv)[0];
+      // Top Page from rankData
+      const topPage = rankData && rankData.length > 0 ? rankData[0] : null;
       metrics.topPath.value = topPage?.path || '/';
-      metrics.topPath.count = topPage?.pv || 0;
+      metrics.topPath.count = topPage?.view_count || 0;
 
       // Update Charts
-      initCharts(trendData, pageData);
+      initCharts(trendData, rankData);
 
       // Update Table
       const maxPv = Math.max(...pageData.map(i => i.pv)) || 1;
