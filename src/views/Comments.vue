@@ -218,34 +218,41 @@ const fetchTrend = async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    // 默认获取足够多的数据，具体展示条数由前端控制
-    // 或者，如果你也希望这里跟随 feedLimit，可以改为 getCommentActivities(feedLimit.value) 并加上 watch(feedLimit, fetchData)
-    // 鉴于下拉框只有 5/10/20，这里一次性获取 50 条也是合理的
-    // 但既然 API 已经支持参数，这里可以改成传递参数
-    await Promise.all([
-      fetchStats(),
-      fetchTrend(),
-      getCommentActivities(feedLimit.value).then(res => activities.value = res),
-      getTopContributors().then(res => contributors.value = res)
+    const [statsRes, trendRes, activitiesRes, contributorsRes] = await Promise.all([
+      getCommentStats(statsDays.value),
+      getInteractionTrend(trendDays.value),
+      getCommentActivities(feedLimit.value),
+      getTopContributors()
     ]);
+
+    stats.value = statsRes;
+    
+    trendData.value = trendRes;
+    initChart(trendRes);
+
+    console.log('Fetched activities:', activitiesRes);
+    activities.value = activitiesRes || [];
+    
+    contributors.value = contributorsRes;
+
   } catch (err) {
-    console.error(err);
+    console.error('Fetch data error:', err);
   } finally {
     loading.value = false;
   }
 };
 
 const displayedActivities = computed(() => {
-  // 如果后端已经按 limit 返回了数据，这里就不需要重复 slice，
-  // 除非后端返回的数据可能多于 feedLimit
-  return activities.value.slice(0, feedLimit.value);
+  return (activities.value || []).slice(0, feedLimit.value);
 });
 
 watch(feedLimit, () => {
   // 当下拉框变化时，重新请求数据
   loading.value = true;
   getCommentActivities(feedLimit.value)
-    .then(res => activities.value = res)
+    .then(res => {
+        activities.value = res || [];
+    })
     .finally(() => loading.value = false);
 });
 
@@ -380,7 +387,14 @@ const openLink = (url) => {
           <div v-for="(user, idx) in contributors" :key="user.id" class="contributor-item">
             <div class="rank" :class="{ top: idx < 3 }">{{ idx + 1 }}</div>
             <a-avatar :size="32" :image-url="user.avatar" />
-            <div class="user-name">{{ user.name }}</div>
+            <div 
+                class="user-name" 
+                :class="{ clickable: !!user.url }" 
+                @click="user.url && openLink(user.url)" 
+                :title="user.url"
+            >
+                {{ user.name }}
+            </div>
             <div class="user-count">{{ user.count }}</div>
           </div>
         </div>
@@ -415,7 +429,7 @@ const openLink = (url) => {
                 <div class="feed-header">
                   <a :href="item.userUrl" target="_blank" class="feed-user">{{ item.user }}</a>
                   <span class="feed-action">{{ getActionText(item.action) }}</span>
-                  <span class="feed-target" @click="openLink(item.url)" :title="item.target">{{ item.target }}</span>
+                  <span class="feed-target" @click="openLink(item.url)" :title="item.url || item.target">{{ item.target }}</span>
                   <span class="feed-time">{{ item.time }}</span>
                 </div>
                 
@@ -583,6 +597,14 @@ const openLink = (url) => {
 .user-name {
   flex: 1;
   font-weight: 500;
+  transition: color 0.2s;
+}
+.user-name.clickable {
+    cursor: pointer;
+}
+.user-name.clickable:hover {
+    color: #165DFF;
+    text-decoration: underline;
 }
 .user-count {
   font-family: 'DIN Alternate', sans-serif;

@@ -239,23 +239,48 @@ export function getCommentStats(days = 7) {
 
 export function getCommentActivities(limit = 5) {
    return apiClient.get('/admin/discussionmap/feed', { params: { limit } }).then(data => {
-       return data.map(item => ({
-           id: item.name + item.time,
-           user: item.name,
-           userUrl: item.url,
-           avatar: item.avatar,
-           action: item.event_type,
-           target: item.path,
-           content: item.content,
-           time: new Date(item.time).toLocaleString(), // Format time
-           timestamp: item.timestamp,
-           type: item.event_type,
-           replyTo: {
-             name: item.replyToName,
-             avatar: item.replyToAvatar,
-             content: item.replyToContent
-           }
-       }));
+       // Handle different response structures (direct array or wrapped in list/items)
+       let list = [];
+       if (Array.isArray(data)) {
+           list = data;
+       } else if (data && Array.isArray(data.list)) {
+           list = data.list;
+       } else if (data && Array.isArray(data.items)) {
+           list = data.items;
+       }
+
+       console.log('Raw feed data:', list); // Debug log
+
+       return list.map((item, index) => {
+           // Parse path to get a shorter target name if possible
+           let targetDisplay = item.path;
+           try {
+               if (item.path.startsWith('http')) {
+                   const urlObj = new URL(item.path);
+                   targetDisplay = urlObj.pathname;
+                   if (targetDisplay === '/' || targetDisplay === '') targetDisplay = 'Home';
+               }
+           } catch (e) { /* ignore */ }
+
+           return {
+               id: `${item.name}-${item.timestamp}-${index}`, // Unique ID
+               user: item.name,
+               userUrl: item.url, // User profile URL (e.g. GitHub)
+               avatar: item.avatar,
+               action: item.event_type, // "comment", "reaction", "reply"
+               target: targetDisplay, 
+               content: item.content,
+               url: item.path, // Content URL (e.g. Blog Post)
+               time: item.time ? new Date(item.time).toLocaleString() : '',
+               timestamp: item.timestamp,
+               type: item.event_type,
+               replyTo: {
+                   name: item.replyToName,
+                   avatar: item.replyToAvatar,
+                   content: item.replyToContent
+               }
+           };
+       });
    });
 }
 
@@ -275,6 +300,7 @@ export function getTopContributors() {
         return data.map(item => ({
             name: item.name,
             avatar: item.avatar,
+            url: item.url, // User profile URL
             count: item.totalFeeds
         }));
     });
