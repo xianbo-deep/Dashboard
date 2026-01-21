@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPageStats, getAnalysisTrend } from '@/api/monitor';
+import { getPageStats, getAnalysisTrend, getPageDetail } from '@/api/monitor';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -229,6 +229,34 @@ const handleTimeChange = () => {
   fetchData();
 };
 
+const handleExpand = async (rowKey, record) => {
+  if (record.referers || record.loadingDetail) return; // Already loaded or loading
+  
+  record.loadingDetail = true;
+  try {
+     const data = await getPageDetail(record.path);
+     
+     // Process Sources
+     const totalSource = (data.sources || []).reduce((sum, item) => sum + item.value, 0) || 1;
+     record.referers = (data.sources || []).map(s => ({
+       name: s.name,
+       value: Math.round((s.value / totalSource) * 100)
+     })).sort((a,b) => b.value - a.value).slice(0, 5); // Status Top 5
+
+     // Process Devices (replacing locations)
+     const totalDevice = (data.devices || []).reduce((sum, item) => sum + item.value, 0) || 1;
+     record.devices = (data.devices || []).map(d => ({
+        name: d.name,
+        value: Math.round((d.value / totalDevice) * 100)
+     })).sort((a,b) => b.value - a.value);
+
+  } catch (e) {
+    console.error(e);
+  } finally {
+    record.loadingDetail = false;
+  }
+};
+
 onMounted(() => {
   fetchData();
 });
@@ -355,6 +383,7 @@ onMounted(() => {
         :bordered="false"
         row-key="path"
         hoverable
+        @expand="handleExpand"
         :expandable="{ width: 40 }"
       >
         <!-- Path Column -->
@@ -407,11 +436,12 @@ onMounted(() => {
         <!-- Expanded Row (Based on VisitLog) -->
         <template #expand-row="{ record }">
           <div class="expand-content">
+            <a-spin :loading="record.loadingDetail" style="width: 100%">
             <a-grid :cols="2" :colGap="40">
               <a-grid-item>
                 <div class="detail-section">
                   <div class="detail-title">来源分析</div>
-                  <div class="detail-list">
+                  <div class="detail-list" v-if="record.referers && record.referers.length">
                     <div v-for="ref in record.referers" :key="ref.name" class="detail-item">
                       <span class="detail-label">{{ ref.name }}</span>
                       <div class="detail-bar-wrapper">
@@ -420,25 +450,26 @@ onMounted(() => {
                       <span class="detail-val">{{ ref.value }}%</span>
                     </div>
                   </div>
+                  <div v-else class="no-data">暂无数据</div>
                 </div>
               </a-grid-item>
               <a-grid-item>
                 <div class="detail-section">
-                  <div class="detail-title">地区分布</div>
-                  <div class="detail-list">
-                    <div v-for="loc in record.locations" :key="loc.name" class="detail-item">
-                      <span class="detail-label">
-                        {{ loc.name }}
-                      </span>
+                  <div class="detail-title">设备分布</div>
+                  <div class="detail-list" v-if="record.devices && record.devices.length">
+                    <div v-for="dev in record.devices" :key="dev.name" class="detail-item">
+                      <span class="detail-label">{{ dev.name }}</span>
                       <div class="detail-bar-wrapper">
-                        <div class="detail-bar" :style="{ width: `${loc.value}%` }"></div>
+                        <div class="detail-bar" :style="{ width: `${dev.value}%` }"></div>
                       </div>
-                      <span class="detail-val">{{ loc.value }}%</span>
+                      <span class="detail-val">{{ dev.value }}%</span>
                     </div>
                   </div>
+                  <div v-else class="no-data">暂无数据</div>
                 </div>
               </a-grid-item>
             </a-grid>
+            </a-spin>
           </div>
         </template>
       </a-table>
@@ -668,6 +699,13 @@ onMounted(() => {
   width: 40px;
   text-align: right;
   color: #86909C;
+}
+
+.no-data {
+  color: #4E5969;
+  font-size: 13px;
+  padding: 8px 0;
+  font-style: italic;
 }
 
 /* Responsive */

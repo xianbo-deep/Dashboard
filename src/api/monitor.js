@@ -59,6 +59,56 @@ export function getTrendData() {
   });
 }
 
+
+
+export function getDashboardSummary() {
+    return apiClient.get('/admin/dashboard/summary');
+}
+
+export function getDashboardInsights(limit = 10) {
+    return apiClient.get('/admin/dashboard/insights', { params: { limit } });
+}
+
+// --- Access Logs ---
+
+export function getLogs(params) {
+  const query = {
+      page: params.page || 1,
+      page_size: params.pageSize || 10,
+      path: params.path,
+      ip: params.ip,
+      method: params.method,
+      status: params.status,
+      latency: params.latency,
+      start: params.startTime || params.start,
+      end: params.endTime || params.end
+  };
+
+  // If keyword is present, it might need to be handled. 
+  // Since the user provided struct doesn't have 'keyword', 
+  // we might want to map it to 'path' or 'ip' if one is detected, 
+  // or pass it along if the backend possibly supports it (custom binding).
+  // For now, let's keep it to avoid breaking if backend supports it hiddenly.
+  if (params.keyword) {
+      query.keyword = params.keyword;
+      // Heuristic: if keyword looks like IP, send as IP?
+      // For now, trust the backend or user's future instruction.
+  }
+  
+  // Clean undefined
+  Object.keys(query).forEach(key => query[key] === undefined && delete query[key]);
+
+  return apiClient.get('/admin/accesslog/logs', { params: query });
+}
+
+// ==========================================
+//                 ANALYSIS (PAGES)
+// ==========================================
+
+export function getAnalysisMetrics(days = 7) {
+  return apiClient.get('/admin/analysis/metrics', { params: { days } });
+}
+
 export function getAnalysisTrend(days = 7) {
   return apiClient.get('/admin/analysis/trend', { params: { days } }).then(data => {
     return data.map(item => {
@@ -82,51 +132,28 @@ export function getRankings(days = 7) {
   });
 }
 
-export function getDashboardSummary() {
-    return apiClient.get('/admin/dashboard/summary');
-}
-
-export function getDashboardInsights(limit = 10) {
-    return apiClient.get('/admin/dashboard/insights', { params: { limit } });
-}
-
-// --- Access Logs ---
-
-export function getLogs(params) {
-  const query = {
+export function getAnalysisPath(params, days = 7) {
+   const query = {
       page: params.page || 1,
       page_size: params.pageSize || 10,
-      ...params
+      days,
+      path: params.path
   };
-  return apiClient.get('/admin/accesslog/logs', { params: query }).then(data => {
-      // Backend returns { list: [], total: ... }
-      return data;
-  });
+  return apiClient.get('/admin/analysis/path', { params: query });
 }
 
-// --- Page Analysis ---
+export function getAnalysisPathSource(path, days = 7) {
+  return apiClient.get('/admin/analysis/source', { params: { path, days } });
+}
 
-export function getPageStats(queryOrType) {
-  let days = 30;
-  if (typeof queryOrType === 'string') {
-      days = queryOrType === 'today' ? 1 : 30;
-  } else if (typeof queryOrType === 'number') {
-      days = queryOrType;
-  }
-
-  const params = {
-      page: 1,
-      page_size: 100,
-      days
-  };
-  
-  return apiClient.get('/admin/analysis/querypath', { params }).then(res => {
-     return res.list.map(item => ({
-         path: item.path,
-         pv: item.pv,
-         uv: item.uv,
-         avg_latency: item.avg_latency
-     }));
+export function getPageStats(days = 7) {
+  return getAnalysisPath({ page: 1, pageSize: 100 }, days).then(res => {
+      return res.list.map(item => ({
+          path: item.path,
+          pv: item.pv,
+          uv: item.uv,
+          avg_latency: item.avg_latency
+      }));
   });
 }
 
@@ -289,41 +316,3 @@ export function getPageDetail(path) {
     });
 }
 
-// --- Missing Interfaces Supplemented from Backend ---
-
-export function getAnalysisMetrics(days = 7) {
-  return apiClient.get('/admin/analysis/metrics', { params: { days } });
-}
-
-export function getAccessLogByQuery(params) {
-  return apiClient.get('/admin/accesslog/querylog', { params });
-}
-
-export function getAnalysisPath(params, days = 7) {
-   const query = {
-      page: params.page || 1,
-      page_size: params.pageSize || 10,
-      days
-  };
-  return apiClient.get('/admin/analysis/path', { params: query });
-}
-
-export function getAnalysisPathSource(path, days = 7) {
-  return apiClient.get('/admin/analysis/source', { params: { path, days } });
-}
-
-export function getPathDetailTrend(path) {
-    return apiClient.get('/admin/analysis/pathDetail/trend', { params: { path } });
-}
-
-export function getPathDetailMetric(path) {
-    return apiClient.get('/admin/analysis/pathDetail/metric', { params: { path } });
-}
-
-export function getPathDetailSource(path) {
-    return apiClient.get('/admin/analysis/pathDetail/source', { params: { path } });
-}
-
-export function getPathDetailDevice(path) {
-    return apiClient.get('/admin/analysis/pathDetail/device', { params: { path } });
-}
