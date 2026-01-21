@@ -40,7 +40,9 @@ const registerMap = async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    const data = await getWorldStats(dateRange.value);
+    // 拆分传递开始和结束时间
+    const [start, end] = dateRange.value || [];
+    const data = await getWorldStats(start, end);
     
     mapOption.value = {
       backgroundColor: 'transparent',
