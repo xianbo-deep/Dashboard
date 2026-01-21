@@ -234,6 +234,7 @@ const fetchData = async () => {
     activities.value = activitiesRes || [];
     
     contributors.value = contributorsRes;
+    console.log('Fetched contributors:', contributorsRes); // Debug log
 
   } catch (err) {
     console.error('Fetch data error:', err);
@@ -414,11 +415,14 @@ const openLink = (url) => {
         </div>
       </template>
       <div class="feed-list">
-        <a-skeleton :loading="loading" animation>
-          <div v-if="loading">
-            <a-skeleton-line :rows="3" />
-          </div>
-          <div v-else>
+        <!-- Manual Loading State -->
+        <div v-if="loading" class="loading-skeleton">
+           <a-skeleton-line :rows="3" />
+        </div>
+        <div v-else class="feed-content-list">
+            <div v-if="displayedActivities.length === 0" class="empty-state">
+                <a-empty description="暂无动态" />
+            </div>
             <div v-for="item in displayedActivities" :key="item.id" class="feed-item">
               <div class="feed-avatar">
                 <a :href="item.userUrl" target="_blank">
@@ -434,7 +438,7 @@ const openLink = (url) => {
                 </div>
                 
                 <!-- Reply Context -->
-                <div v-if="item.replyTo && item.replyTo.name && item.action === 'reply'" class="reply-context">
+                <div v-if="item.replyTo && item.replyTo.name && (item.action === 'reply' || item.action === 'comment')" class="reply-context">
                    <span class="replied-to">Replying to <span class="reply-name">@{{ item.replyTo.name }}</span>:</span>
                    <div class="reply-quote">{{ item.replyTo.content }}</div>
                 </div>
@@ -452,8 +456,7 @@ const openLink = (url) => {
                 <a-tag :color="getActionColor(item.action)" size="small">{{ item.action }}</a-tag>
               </div>
             </div>
-          </div>
-        </a-skeleton>
+        </div>
       </div>
     </a-card>
   </div>
