@@ -218,10 +218,14 @@ const fetchTrend = async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
+    // 默认获取足够多的数据，具体展示条数由前端控制
+    // 或者，如果你也希望这里跟随 feedLimit，可以改为 getCommentActivities(feedLimit.value) 并加上 watch(feedLimit, fetchData)
+    // 鉴于下拉框只有 5/10/20，这里一次性获取 50 条也是合理的
+    // 但既然 API 已经支持参数，这里可以改成传递参数
     await Promise.all([
       fetchStats(),
       fetchTrend(),
-      getCommentActivities().then(res => activities.value = res),
+      getCommentActivities(feedLimit.value).then(res => activities.value = res),
       getTopContributors().then(res => contributors.value = res)
     ]);
   } catch (err) {
@@ -232,7 +236,17 @@ const fetchData = async () => {
 };
 
 const displayedActivities = computed(() => {
+  // 如果后端已经按 limit 返回了数据，这里就不需要重复 slice，
+  // 除非后端返回的数据可能多于 feedLimit
   return activities.value.slice(0, feedLimit.value);
+});
+
+watch(feedLimit, () => {
+  // 当下拉框变化时，重新请求数据
+  loading.value = true;
+  getCommentActivities(feedLimit.value)
+    .then(res => activities.value = res)
+    .finally(() => loading.value = false);
 });
 
 watch(chartType, () => {

@@ -237,8 +237,8 @@ export function getCommentStats(days = 7) {
   });
 }
 
-export function getCommentActivities() {
-   return apiClient.get('/admin/discussionmap/feed', { params: { limit: 50 } }).then(data => {
+export function getCommentActivities(limit = 5) {
+   return apiClient.get('/admin/discussionmap/feed', { params: { limit } }).then(data => {
        return data.map(item => ({
            id: item.url + item.time,
            user: item.name,
