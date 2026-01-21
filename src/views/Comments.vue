@@ -388,15 +388,17 @@ const openLink = (url) => {
           <div v-for="(user, idx) in contributors" :key="user.id" class="contributor-item">
             <div class="rank" :class="{ top: idx < 3 }">{{ idx + 1 }}</div>
             <a-avatar :size="32" :image-url="user.avatar" />
-            <div 
-                class="user-name" 
-                :class="{ clickable: !!user.url }" 
-                @click="user.url && openLink(user.url)" 
-                :title="user.url"
-            >
-                {{ user.name }}
+            <div class="user-info-wraper">
+                <div 
+                    class="user-name aurora-text" 
+                    :class="{ clickable: !!user.url }" 
+                    @click="user.url && openLink(user.url)" 
+                    :title="user.url"
+                >
+                    {{ user.name }}
+                </div>
+                <div class="user-count">{{ user.count }} interactions</div>
             </div>
-            <div class="user-count">{{ user.count }}</div>
           </div>
         </div>
       </a-card>
@@ -406,8 +408,8 @@ const openLink = (url) => {
     <a-card class="feed-card" :bordered="false">
       <template #title>
         <div class="feed-header-row">
-          <span>最新动态</span>
-          <a-select v-model="feedLimit" :style="{width:'120px'}" size="small">
+          <span class="section-title">最新动态</span>
+          <a-select v-model="feedLimit" class="glass-select" :style="{width:'120px'}" size="small">
             <a-option :value="5">最近 5 条</a-option>
             <a-option :value="10">最近 10 条</a-option>
             <a-option :value="20">最近 20 条</a-option>
@@ -416,44 +418,63 @@ const openLink = (url) => {
       </template>
       <div class="feed-list">
         <!-- Manual Loading State -->
-        <div v-if="loading" class="loading-skeleton">
-           <a-skeleton-line :rows="3" />
+        <div v-if="loading" class="loading-state">
+           <a-spin dot />
         </div>
         <div v-else class="feed-content-list">
             <div v-if="displayedActivities.length === 0" class="empty-state">
                 <a-empty description="暂无动态" />
             </div>
-            <div v-for="item in displayedActivities" :key="item.id" class="feed-item">
-              <div class="feed-avatar">
-                <a :href="item.userUrl" target="_blank">
+            
+            <div v-for="item in displayedActivities" :key="item.id" class="feed-card-item">
+              <!-- Left Side: Avatar -->
+              <div class="item-avatar">
+                 <a :href="item.userUrl" target="_blank" class="avatar-link">
                     <img :src="item.avatar" alt="avatar" />
-                </a>
+                 </a>
               </div>
-              <div class="feed-content">
-                <div class="feed-header">
-                  <a :href="item.userUrl" target="_blank" class="feed-user">{{ item.user }}</a>
-                  <span class="feed-action">{{ getActionText(item.action) }}</span>
-                  <span class="feed-target" @click="openLink(item.url)" :title="item.url || item.target">{{ item.target }}</span>
-                  <span class="feed-time">{{ item.time }}</span>
-                </div>
-                
-                <!-- Reply Context -->
-                <div v-if="item.replyTo && item.replyTo.name && (item.action === 'reply' || item.action === 'comment')" class="reply-context">
-                   <span class="replied-to">Replying to <span class="reply-name">@{{ item.replyTo.name }}</span>:</span>
-                   <div class="reply-quote">{{ item.replyTo.content }}</div>
+
+              <!-- Right Side: Content -->
+              <div class="item-main">
+                <!-- Header: Who did what where -->
+                <div class="item-header">
+                   <div class="header-left">
+                      <a :href="item.userUrl" target="_blank" class="user-link aurora-text">{{ item.user }}</a>
+                      
+                      <span class="action-badge" :class="item.action">
+                         <icon-message v-if="item.action === 'comment'" /> 
+                         <icon-user-group v-else-if="item.action === 'reply'" />
+                         <icon-heart v-else-if="item.action === 'reaction'" />
+                         <span class="action-text">{{ getActionText(item.action).replace(' on', '').replace(' to', '') }}</span>
+                      </span>
+
+                      <span class="target-link" @click="openLink(item.url)" :title="item.url || item.target">
+                        {{ item.target }}
+                      </span>
+                   </div>
+                   <div class="header-right">
+                       <span class="time-text">{{ item.time }}</span>
+                   </div>
                 </div>
 
-                <div class="feed-body">
-                  <div v-if="item.type === 'reaction'" class="reaction-content">
-                    {{ formatContent(item) }}
-                  </div>
-                  <div v-else class="text-content">
-                    {{ item.content }}
-                  </div>
+                <!-- Body Content -->
+                <div class="item-body">
+                   <!-- Reaction is special -->
+                   <div v-if="item.type === 'reaction'" class="reaction-display">
+                      {{ formatContent(item) }}
+                   </div>
+                   <div v-else class="text-display">
+                      {{ item.content }}
+                   </div>
                 </div>
-              </div>
-              <div class="feed-tag">
-                <a-tag :color="getActionColor(item.action)" size="small">{{ item.action }}</a-tag>
+
+                <!-- Quote / Context -->
+                <div v-if="item.replyTo && item.replyTo.name && (item.action === 'reply' || item.action === 'comment')" class="quote-container">
+                   <div class="quote-header">
+                      Replying to <span class="quote-user">@{{ item.replyTo.name }}</span>
+                   </div>
+                   <div class="quote-content">{{ item.replyTo.content }}</div>
+                </div>
               </div>
             </div>
         </div>
@@ -466,8 +487,9 @@ const openLink = (url) => {
 .comments-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .toolbar {
@@ -478,21 +500,26 @@ const openLink = (url) => {
 
 .page-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #fff, #b4b8bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 /* KPI Cards */
 .kpi-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  transition: transform 0.3s;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 .kpi-card:hover {
   transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .kpi-content {
@@ -502,125 +529,180 @@ const openLink = (url) => {
 }
 
 .kpi-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  transition: transform 0.3s;
 }
-.kpi-icon-wrapper.blue { background: rgba(22, 93, 255, 0.2); color: #165DFF; }
-.kpi-icon-wrapper.green { background: rgba(0, 180, 42, 0.2); color: #00B42A; }
-.kpi-icon-wrapper.red { background: rgba(245, 63, 63, 0.2); color: #F53F3F; }
+.kpi-card:hover .kpi-icon-wrapper {
+  transform: scale(1.1);
+}
+.kpi-icon-wrapper.blue { background: rgba(22, 93, 255, 0.15); color: #4080FF; }
+.kpi-icon-wrapper.green { background: rgba(0, 180, 42, 0.15); color: #00E8CF; }
+.kpi-icon-wrapper.red { background: rgba(245, 63, 63, 0.15); color: #FF7D00; }
 
 .kpi-info {
   display: flex;
   flex-direction: column;
 }
 .kpi-label {
-  color: var(--color-text-3);
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
 }
 .kpi-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 28px;
+  font-weight: 700;
   font-family: 'DIN Alternate', sans-serif;
   color: #fff;
+  line-height: 1.2;
 }
 
 /* Middle Row */
 .middle-row {
   display: flex;
-  gap: 16px;
-  height: 350px;
+  gap: 20px;
+  height: 380px;
+}
+.chart-card, .contributors-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
 }
 .chart-card {
   flex: 2;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
+}
+.chart-card :deep(.arco-card-header), .contributors-card :deep(.arco-card-header) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 .chart-card :deep(.arco-card-body) {
-  padding: 0 12px 12px;
+  padding: 0 16px 16px;
   height: 100%;
-  box-sizing: border-box;
 }
 .contributors-card {
   flex: 1;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
 }
 .contributors-card :deep(.arco-card-body) {
   flex: 1;
   overflow: hidden;
-  padding: 0 12px 12px;
+  padding: 12px;
 }
 
-.chart {
-  width: 100%;
-  height: 100%;
-}
-
-/* Contributors List */
+/* Contributors List Advanced Interaction */
 .contributors-list {
   height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding-right: 4px;
 }
+/* Scrollbar styling */
+.contributors-list::-webkit-scrollbar {
+    width: 4px;
+}
+.contributors-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
 .contributor-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.02);
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.3s;
 }
+.contributor-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
 .rank {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--color-text-3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
 }
 .rank.top {
-  background: #F7BA1E;
-  color: #000;
+  background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(253, 185, 49, 0.3);
 }
-.user-name {
-  flex: 1;
+
+.user-info-wraper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Advanced Hover Effect for User Name */
+.aurora-text {
+  font-size: 14px;
   font-weight: 500;
-  transition: color 0.2s;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+  transition: all 0.3s ease;
 }
-.user-name.clickable {
+
+.aurora-text.clickable {
     cursor: pointer;
 }
-.user-name.clickable:hover {
-    color: #165DFF;
-    text-decoration: underline;
+
+/* Animated Underline Effect */
+.aurora-text.clickable::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(90deg, #165DFF, #00E8CF);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s ease-out;
+  box-shadow: 0 0 8px rgba(22, 93, 255, 0.5);
 }
+
+.aurora-text.clickable:hover {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(22, 93, 255, 0.6);
+}
+
+.aurora-text.clickable:hover::after {
+  transform: scaleX(1);
+}
+
 .user-count {
-  font-family: 'DIN Alternate', sans-serif;
-  font-weight: bold;
-  color: #165DFF;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
 }
 
 /* Feed */
 .feed-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  /* Removed min-height to let it shrink */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
 }
 
 .feed-header-row {
@@ -628,97 +710,166 @@ const openLink = (url) => {
   justify-content: space-between;
   align-items: center;
 }
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+}
 
 .feed-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px; /* spacing between cards */
+  padding: 8px 0;
 }
 
-.feed-item {
+/* Modern Card Style for Feed Items */
+.feed-card-item {
   display: flex;
   gap: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.feed-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.feed-avatar img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #333;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.feed-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.feed-card-item:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.feed-header {
-  font-size: 13px;
-  color: var(--color-text-3);
+.item-avatar img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s;
 }
-.feed-user {
-  color: #fff;
-  font-weight: bold;
-  margin-right: 4px;
-}
-.feed-action {
-  margin-right: 4px;
-}
-.feed-target {
-  color: #165DFF;
-  cursor: pointer;
-  margin-right: 8px;
-}
-.feed-time {
-  font-size: 12px;
-  color: var(--color-text-4);
+.item-avatar img:hover {
+    transform: rotate(10deg) scale(1.05);
+    border-color: #165DFF;
 }
 
-.feed-body {
-  font-size: 14px;
-  color: var(--color-text-1);
-  margin-top: 2px;
+.item-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.reaction-content {
-  font-size: 18px;
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.reply-context {
-  margin: 4px 0;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border-left: 2px solid #4E5969;
-  border-radius: 0 4px 4px 0;
-  font-size: 12px;
+.user-link {
+    font-size: 15px; 
+    font-weight: 600; 
+    text-decoration: none;
+    letter-spacing: 0.3px;
 }
-.replied-to {
-  color: var(--color-text-3);
-  margin-bottom: 2px;
-  display: block;
-}
-.reply-name {
-  color: #165DFF;
-  font-weight: 500;
-}
-.reply-quote {
-  color: var(--color-text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Re-use aurora effect logic simplified for feed username if valid */
+.user-link:hover {
+    color: #165DFF;
+    text-shadow: 0 0 10px rgba(22, 93, 255, 0.4);
 }
 
-.feed-tag {
-  display: flex;
-  align-items: flex-start;
+/* Integrated Action Badge */
+.action-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+.action-badge.comment { color: #4080FF; background: rgba(64, 128, 255, 0.1); }
+.action-badge.reply { color: #00E8CF; background: rgba(0, 232, 207, 0.1); }
+.action-badge.reaction { color: #FF7D00; background: rgba(255, 125, 0, 0.1); }
+
+.target-link {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.2s;
+    position: relative;
+    padding-left: 12px;
+}
+.target-link::before {
+    content: '/';
+    position: absolute;
+    left: 2px;
+    color: rgba(255, 255, 255, 0.3);
+}
+.target-link:hover {
+    color: #165DFF;
+}
+
+.header-right .time-text {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Inter', sans-serif;
+}
+
+.item-body {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+
+/* Reaction Content Big Emoji */
+.reaction-display {
+    font-size: 24px;
+    line-height: 1.2;
+    padding: 4px 0;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+}
+
+/* Enhanced Quote Block */
+.quote-container {
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, rgba(22, 93, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border-left: 3px solid #165DFF;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+}
+
+.quote-header {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 4px;
+}
+.quote-user {
+    color: #4080FF;
+    font-weight: 500;
+}
+.quote-content {
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
 }
 </style>
