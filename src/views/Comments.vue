@@ -180,7 +180,7 @@ const initChart = (data) => {
     grid: {
       left: '2%',
       right: '2%',
-      bottom: '2%',
+      bottom: '10%',
       top: '40',
       containLabel: true
     },
