@@ -240,13 +240,14 @@ export function getCommentStats(days = 7) {
 export function getCommentActivities(limit = 5) {
    return apiClient.get('/admin/discussionmap/feed', { params: { limit } }).then(data => {
        return data.map(item => ({
-           id: item.url + item.time,
+           id: item.name + item.time,
            user: item.name,
+           userUrl: item.url,
            avatar: item.avatar,
            action: item.event_type,
            target: item.path,
            content: item.content,
-           time: item.time,
+           time: new Date(item.time).toLocaleString(), // Format time
            timestamp: item.timestamp,
            type: item.event_type,
            replyTo: {

@@ -259,12 +259,43 @@ onMounted(() => {
 
 const getActionColor = (action) => {
   switch (action) {
-    case 'commented': return 'arcoblue';
-    case 'replied': return 'green';
-    case 'reacted': return 'red';
+    case 'comment': return 'arcoblue';
+    case 'reply': return 'green';
+    case 'reaction': return 'red';
     default: return 'gray';
   }
 };
+
+const reactionMap = {
+  'THUMBS_UP': '👍',
+  'THUMBS_DOWN': '👎',
+  'LAUGH': '😄',
+  'HOORAY': '🎉',
+  'CONFUSED': '😕',
+  'HEART': '❤️',
+  'ROCKET': '🚀',
+  'EYES': '👀'
+};
+
+const formatContent = (item) => {
+  if (item.type === 'reaction') {
+    return reactionMap[item.content] || item.content;
+  }
+  return item.content;
+};
+
+const getActionText = (action) => {
+    switch (action) {
+        case 'comment': return 'commented on';
+        case 'reply': return 'replied on';
+        case 'reaction': return 'reacted to';
+        default: return action;
+    }
+}
+
+const openLink = (url) => {
+    if(url) window.open(url, '_blank');
+}
 </script>
 
 <template>
@@ -376,25 +407,27 @@ const getActionColor = (action) => {
           <div v-else>
             <div v-for="item in displayedActivities" :key="item.id" class="feed-item">
               <div class="feed-avatar">
-                <img :src="item.avatar" alt="avatar" />
+                <a :href="item.userUrl" target="_blank">
+                    <img :src="item.avatar" alt="avatar" />
+                </a>
               </div>
               <div class="feed-content">
                 <div class="feed-header">
-                  <span class="feed-user">{{ item.user }}</span>
-                  <span class="feed-action">{{ item.action }} in</span>
-                  <span class="feed-target" @click="openLink(item.url)">{{ item.target }}</span>
+                  <a :href="item.userUrl" target="_blank" class="feed-user">{{ item.user }}</a>
+                  <span class="feed-action">{{ getActionText(item.action) }}</span>
+                  <span class="feed-target" @click="openLink(item.url)" :title="item.target">{{ item.target }}</span>
                   <span class="feed-time">{{ item.time }}</span>
                 </div>
                 
                 <!-- Reply Context -->
-                <div v-if="item.replyTo && item.replyTo.name && item.action === 'replied'" class="reply-context">
+                <div v-if="item.replyTo && item.replyTo.name && item.action === 'reply'" class="reply-context">
                    <span class="replied-to">Replying to <span class="reply-name">@{{ item.replyTo.name }}</span>:</span>
                    <div class="reply-quote">{{ item.replyTo.content }}</div>
                 </div>
 
                 <div class="feed-body">
-                  <div v-if="item.type === 'reacted'" class="reaction-content">
-                    {{ item.content }}
+                  <div v-if="item.type === 'reaction'" class="reaction-content">
+                    {{ formatContent(item) }}
                   </div>
                   <div v-else class="text-content">
                     {{ item.content }}
