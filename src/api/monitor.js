@@ -86,8 +86,8 @@ export function getDashboardSummary() {
     return apiClient.get('/admin/dashboard/summary');
 }
 
-export function getDashboardInsights() {
-    return apiClient.get('/admin/dashboard/insights');
+export function getDashboardInsights(limit = 10) {
+    return apiClient.get('/admin/dashboard/insights', { params: { limit } });
 }
 
 // --- Access Logs ---
@@ -145,8 +145,8 @@ export function getPerformanceTrend() {
   });
 }
 
-export function getSlowestPages() {
-  return apiClient.get('/admin/performance/slowPages').then(data => {
+export function getSlowestPages(limit = 10) {
+  return apiClient.get('/admin/performance/slowPages', { params: { limit } }).then(data => {
       // Backend returns []SlowDelayItem { path, avg_delay }
       return data.map(item => ({
           path: item.path,
@@ -157,8 +157,11 @@ export function getSlowestPages() {
 
 // --- Visitor Map ---
 
-export function getWorldStats(date) {
-  return apiClient.get('/admin/visitormap/map').then(data => {
+export function getWorldStats(start, end) {
+    const params = {};
+    if (start) params.startTime = start;
+    if (end) params.endTime = end;
+  return apiClient.get('/admin/visitormap/map', { params }).then(data => {
       return data.map(item => ({
           name: item.country,
           value: item.count
@@ -166,8 +169,11 @@ export function getWorldStats(date) {
   });
 }
 
-export function getChinaStats(date) {
-  return apiClient.get('/admin/visitormap/chineseMap').then(data => {
+export function getChinaStats(start, end) {
+    const params = {};
+    if (start) params.startTime = start;
+    if (end) params.endTime = end;
+  return apiClient.get('/admin/visitormap/chineseMap', { params }).then(data => {
       return data.map(item => ({
           name: item.province || item.name, 
           value: item.count
@@ -281,4 +287,43 @@ export function getPageDetail(path) {
             devices
         };
     });
+}
+
+// --- Missing Interfaces Supplemented from Backend ---
+
+export function getAnalysisMetrics(days = 7) {
+  return apiClient.get('/admin/analysis/metrics', { params: { days } });
+}
+
+export function getAccessLogByQuery(params) {
+  return apiClient.get('/admin/accesslog/querylog', { params });
+}
+
+export function getAnalysisPath(params, days = 7) {
+   const query = {
+      page: params.page || 1,
+      page_size: params.pageSize || 10,
+      days
+  };
+  return apiClient.get('/admin/analysis/path', { params: query });
+}
+
+export function getAnalysisPathSource(path, days = 7) {
+  return apiClient.get('/admin/analysis/source', { params: { path, days } });
+}
+
+export function getPathDetailTrend(path) {
+    return apiClient.get('/admin/analysis/pathDetail/trend', { params: { path } });
+}
+
+export function getPathDetailMetric(path) {
+    return apiClient.get('/admin/analysis/pathDetail/metric', { params: { path } });
+}
+
+export function getPathDetailSource(path) {
+    return apiClient.get('/admin/analysis/pathDetail/source', { params: { path } });
+}
+
+export function getPathDetailDevice(path) {
+    return apiClient.get('/admin/analysis/pathDetail/device', { params: { path } });
 }

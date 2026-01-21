@@ -28,7 +28,7 @@ const pagination = reactive({
 const searchForm = reactive({
   keyword: '',
   status: '',
-  latency: false
+  latency: undefined // Change to undefined or integer, initially empty
 });
 
 const drawerVisible = ref(false);
@@ -117,8 +117,15 @@ const fetchData = async (params = {}) => {
     const query = {
       page: params.current || pagination.current,
       pageSize: params.pageSize || pagination.pageSize,
-      ...searchForm
+      keyword: searchForm.keyword,
+      status: searchForm.status,
     };
+
+    // 只有当有值的时候才传递 latency，并确保转为整数
+    if (searchForm.latency) {
+        query.latency = parseInt(searchForm.latency, 10);
+    }
+
     // In a real app, pass searchForm to API
     const res = await getLogs(query);
     
@@ -148,7 +155,7 @@ const onSearch = () => {
 const onReset = () => {
   searchForm.keyword = '';
   searchForm.status = '';
-  searchForm.latency = false;
+  searchForm.latency = undefined;
   fetchData({ current: 1 });
 };
 
@@ -181,9 +188,18 @@ onMounted(() => {
             <a-option :value="404">404 Not Found</a-option>
             <a-option :value="500">500 Error</a-option>
           </a-select>
-          <a-checkbox v-model="searchForm.latency" @change="onSearch">
-            耗时 > 500ms
-          </a-checkbox>
+          <a-input-number 
+            v-model="searchForm.latency" 
+            placeholder="最小耗时(ms)" 
+            style="width: 140px" 
+            allow-clear 
+            hide-button
+            @change="onSearch"
+          >
+             <template #prefix>
+                >
+             </template>
+          </a-input-number>
           <a-button type="outline" @click="onReset">
             <template #icon><icon-refresh /></template>
             重置
