@@ -56,20 +56,22 @@ const initChart = (data) => {
   const series = [];
   
   // Helper for styles
+  // Neon Glow Line Style
   const commonLineStyle = (color) => ({
     width: 3,
     color: color,
     shadowColor: color,
-    shadowBlur: 15,
-    shadowOffsetY: 5
+    shadowBlur: 10,
+    shadowOffsetY: 0
   });
 
+  // Glassmorphism Gradient Area
   const commonAreaStyle = (r, g, b) => ({
     color: {
       type: 'linear',
       x: 0, y: 0, x2: 0, y2: 1,
       colorStops: [
-        { offset: 0, color: `rgba(${r}, ${g}, ${b}, 0.3)` },
+        { offset: 0, color: `rgba(${r}, ${g}, ${b}, 0.4)` },
         { offset: 1, color: `rgba(${r}, ${g}, ${b}, 0.0)` }
       ],
       global: false
@@ -82,7 +84,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#4080FF',
         borderColor: '#fff',
@@ -90,7 +92,8 @@ const initChart = (data) => {
       },
       data: comments,
       lineStyle: commonLineStyle('#4080FF'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(64, 128, 255) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(64, 128, 255) : undefined,
+      z: 3
     });
   }
   
@@ -100,7 +103,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#00E8CF',
         borderColor: '#fff',
@@ -108,7 +111,8 @@ const initChart = (data) => {
       },
       data: replies,
       lineStyle: commonLineStyle('#00E8CF'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(0, 232, 207) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(0, 232, 207) : undefined,
+      z: 2
     });
   }
   
@@ -118,7 +122,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#FF7D00',
         borderColor: '#fff',
@@ -126,7 +130,8 @@ const initChart = (data) => {
       },
       data: reactions,
       lineStyle: commonLineStyle('#FF7D00'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(255, 125, 0) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(255, 125, 0) : undefined,
+      z: 1
     });
   }
 
@@ -134,33 +139,26 @@ const initChart = (data) => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 20, 0.4)',
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
       borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       textStyle: { color: '#fff' },
-      padding: [16, 20],
-      extraCssText: 'backdrop-filter: blur(12px); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);',
+      padding: [12, 16],
+      extraCssText: 'backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);',
       axisPointer: {
         type: 'line',
         lineStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(255, 255, 255, 0)' },
-              { offset: 0.5, color: 'rgba(255, 255, 255, 0.3)' },
-              { offset: 1, color: 'rgba(255, 255, 255, 0)' }
-            ]
-          },
-          width: 1
+          color: 'rgba(255, 255, 255, 0.3)',
+          width: 1, 
+          type: 'dashed'
         }
       },
       formatter: (params) => {
-        let result = `<div style="margin-bottom: 10px; font-weight: 500; color: rgba(255,255,255,0.7); font-size: 12px; letter-spacing: 0.5px;">${params[0].axisValue}</div>`;
+        let result = `<div style="margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8); font-size: 12px;">${params[0].axisValue}</div>`;
         params.forEach(item => {
-          const dot = `<span style="display:inline-block;margin-right:8px;border-radius:50%;width:8px;height:8px;background-color:${item.color};box-shadow: 0 0 5px ${item.color}"></span>`;
-          result += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 30px; margin-top: 8px;">
-            <span style="color: #fff; font-size: 13px; font-weight: 500;">${dot}${item.seriesName}</span>
+          const dot = `<span style="display:inline-block;margin-right:8px;border-radius:50%;width:8px;height:8px;background-color:${item.color};box-shadow: 0 0 6px ${item.color}"></span>`;
+          result += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 6px;">
+            <span style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">${dot}${item.seriesName}</span>
             <span style="font-weight: 600; color: #fff; font-family: 'DIN Alternate', sans-serif; font-size: 14px;">${item.value}</span>
           </div>`;
         });
@@ -170,34 +168,47 @@ const initChart = (data) => {
     legend: {
       show: chartType.value === 'all',
       data: ['Comments', 'Replies', 'Reactions'],
-      textStyle: { color: '#86909C' },
-      icon: 'roundRect',
-      itemWidth: 12,
-      itemHeight: 4,
+      textStyle: { color: 'rgba(255, 255, 255, 0.6)' },
+      icon: 'circle',
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 20,
       top: 0,
       right: 0
     },
     grid: {
-      left: '2%',
+      left: '1%',
       right: '2%',
-      bottom: '10%',
-      top: '40',
+      bottom: '5%',
+      top: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: dates,
-      axisLine: { show: true, lineStyle: { color: 'rgba(255, 255, 255, 0.08)' } },
+      axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#86909C', fontSize: 12, margin: 12 }
+      axisLabel: { 
+        color: 'rgba(255, 255, 255, 0.4)', 
+        fontSize: 11, 
+        margin: 16,
+        interval: 'auto',
+        hideOverlap: true
+      }
     },
     yAxis: {
       type: 'value',
       min: 0,
       minInterval: 1,
-      splitLine: { show: true, lineStyle: { type: 'dashed', color: 'rgba(255, 255, 255, 0.04)' } },
-      axisLabel: { color: '#86909C' },
+      splitLine: { 
+        show: true, 
+        lineStyle: { 
+          type: 'dashed', 
+          color: 'rgba(255, 255, 255, 0.05)' 
+        } 
+      },
+      axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 11 },
       splitNumber: 3
     },
     series: series
