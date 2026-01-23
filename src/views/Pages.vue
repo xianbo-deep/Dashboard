@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPageStats, getAnalysisTrend, getPageDetail, getAnalysisMetrics, getRankings } from '@/api/monitor';
+import { getPageStats, getAnalysisTrend, getPageDetail, getAnalysisMetrics, getRankings, getAnalysisPathSource } from '@/api/monitor';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -196,17 +196,16 @@ const fetchData = async () => {
       // Update Metrics using dedicated API response
       // Assuming metricsData structure corresponds to what backend returns (total_pv, total_uv, avg_latency)
       // 根据通常的后端返回这里做一个简单适配，如果后端返回字段名不同请调整
-      metrics.totalPv.value = metricsData.total_pv || metricsData.pv || 0;
-      metrics.totalUv.value = metricsData.total_uv || metricsData.uv || 0;
-      metrics.avgLatency.value = Math.round(metricsData.avg_latency || 0);
+      metrics.totalPv.value = metricsData.totalPV || 0;
+      metrics.totalUv.value = metricsData.totalUV || 0;
+      metrics.avgLatency.value = Math.round(metricsData.avgLatency || 0);
 
       // Trend or status logic remains similar for frontend visual
       metrics.avgLatency.status = metrics.avgLatency.value < 200 ? 'success' : metrics.avgLatency.value < 500 ? 'warning' : 'danger';
       
-      // Top Page from rankData
-      const topPage = rankData && rankData.length > 0 ? rankData[0] : null;
-      metrics.topPath.value = topPage?.path || '/';
-      metrics.topPath.count = topPage?.view_count || 0;
+      // Top Page from metricsData
+      metrics.topPath.value = metricsData.hotPage || '/';
+      metrics.topPath.count = metricsData.hotPagePV || 0;
 
       // Update Charts
       initCharts(trendData, rankData);
@@ -240,11 +239,23 @@ const handleExpand = async (rowKey, record) => {
   
   record.loadingDetail = true;
   try {
-     const data = await getPageDetail(record.path);
+     const daysMap = { '3d': 3, '15d': 15, '30d': 30 };
+     const days = daysMap[timeRange.value] || 15;
+
+     const [data, sourceData] = await Promise.all([
+        getPageDetail(record.path),
+        getAnalysisPathSource(record.path, days)
+     ]);
      
      // Process Sources
-     const totalSource = (data.sources || []).reduce((sum, item) => sum + item.value, 0) || 1;
-     record.referers = (data.sources || []).map(s => ({
+     // Using sourceData from getAnalysisPathSource which supports days
+     const sourcesProcessed = (sourceData || []).map(item => ({
+        name: item.source,
+        value: item.count
+     }));
+
+     const totalSource = sourcesProcessed.reduce((sum, item) => sum + item.value, 0) || 1;
+     record.referers = sourcesProcessed.map(s => ({
        name: s.name,
        value: Math.round((s.value / totalSource) * 100)
      })).sort((a,b) => b.value - a.value).slice(0, 5); // Status Top 5

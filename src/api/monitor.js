@@ -152,7 +152,7 @@ export function getPageStats(days = 7) {
           path: item.path,
           pv: item.pv,
           uv: item.uv,
-          avg_latency: item.avg_latency
+          avg_latency: item.avgLatency
       }));
   });
 }
@@ -161,7 +161,7 @@ export function getPageStats(days = 7) {
 
 export function getPerformanceTrend() {
   return apiClient.get('/admin/performance/averageDelay').then(data => {
-      return data.map(item => {
+      return (data || []).map(item => {
           const d = new Date(item.time);
           const hour = d.getHours().toString().padStart(2, '0') + ':00';
           return {
@@ -175,7 +175,7 @@ export function getPerformanceTrend() {
 export function getSlowestPages(limit = 10) {
   return apiClient.get('/admin/performance/slowPages', { params: { limit } }).then(data => {
       // Backend returns []SlowDelayItem { path, avg_delay }
-      return data.map(item => ({
+      return (data || []).map(item => ({
           path: item.path,
           avg_latency: item.avg_delay
       }));
@@ -189,7 +189,7 @@ export function getWorldStats(start, end) {
     if (start) params.startTime = start;
     if (end) params.endTime = end;
   return apiClient.get('/admin/visitormap/map', { params }).then(data => {
-      return data.map(item => ({
+      return (data || []).map(item => ({
           name: item.country,
           value: item.count
       }));
@@ -201,7 +201,7 @@ export function getChinaStats(start, end) {
     if (start) params.startTime = start;
     if (end) params.endTime = end;
   return apiClient.get('/admin/visitormap/chineseMap', { params }).then(data => {
-      return data.map(item => ({
+      return (data || []).map(item => ({
           name: item.province || item.name, 
           value: item.count
       }));
@@ -316,27 +316,29 @@ export function getPageDetail(path) {
 
     return Promise.all([p1, p2, p3, p4]).then(([trendData, sourceData, deviceData, metricData]) => {
         
-        const trend = trendData.map(item => ({
-            time: item.date, 
-            pv: item.pv,
-            uv: item.uv
-        }));
+        const trend = (trendData || []).map(item => {
+            const dateObj = new Date(item.date);
+            const dateStr = `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            return {
+                time: dateStr, 
+                pv: item.pv,
+                uv: item.uv
+            };
+        });
 
-        const sources = sourceData.map(item => ({
+        const sources = (sourceData || []).map(item => ({
             name: item.source,
             value: item.count
         }));
 
-        const devices = deviceData.map(item => ({
+        const devices = (deviceData || []).map(item => ({
             name: item.device,
             value: item.count
         }));
 
         const stats = {
-            pv: metricData.pv || 0,
-            uv: metricData.uv || 0,
-            avgTime: '0s', 
-            bounceRate: '0%' 
+            pv: metricData?.pv || 0,
+            uv: metricData?.uv || 0
         };
 
         return {

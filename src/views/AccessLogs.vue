@@ -266,21 +266,34 @@ onMounted(() => {
     >
       <div v-if="currentLog" class="log-detail">
         <a-descriptions :column="1" bordered>
-          <a-descriptions-item label="Request ID">{{ currentLog.visitor_id }}</a-descriptions-item>
-          <a-descriptions-item label="Time">{{ currentLog.visit_time }}</a-descriptions-item>
-          <a-descriptions-item label="IP">{{ currentLog.ip }}</a-descriptions-item>
-          <a-descriptions-item label="Location">{{ currentLog.city }}, {{ currentLog.region }}, {{ currentLog.country }}</a-descriptions-item>
-          <a-descriptions-item label="Method">
-            <a-tag color="arcoblue">GET</a-tag>
+          <a-descriptions-item label="访客 ID">{{ currentLog.visitor_id }}</a-descriptions-item>
+          <a-descriptions-item label="IP 地址">{{ currentLog.ip }}</a-descriptions-item>
+          <a-descriptions-item label="客户端时间" v-if="currentLog.client_time">{{ currentLog.client_time }}</a-descriptions-item>
+          
+          <a-descriptions-item label="地理位置">
+             {{ [currentLog.country, currentLog.region, currentLog.city].filter(Boolean).join(' · ') || '-' }}
           </a-descriptions-item>
-          <a-descriptions-item label="Path">
+
+          <a-descriptions-item label="访问路径">
             <code class="path-code">{{ currentLog.path }}</code>
           </a-descriptions-item>
-          <a-descriptions-item label="Status">
+          
+          <a-descriptions-item label="状态码">
             <a-tag :color="currentLog.status >= 200 && currentLog.status < 300 ? 'green' : 'red'">{{ currentLog.status }}</a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="Latency">{{ currentLog.latency }}ms</a-descriptions-item>
-          <a-descriptions-item label="Referer">{{ currentLog.referer }}</a-descriptions-item>
+          <a-descriptions-item label="响应耗时">{{ currentLog.latency }}ms</a-descriptions-item>
+          
+          <a-descriptions-item label="来源媒介" v-if="currentLog.medium">{{ currentLog.medium }}</a-descriptions-item>
+          <a-descriptions-item label="来源" v-if="currentLog.source">{{ currentLog.source }}</a-descriptions-item>
+          
+          <a-descriptions-item label="引用页" v-if="currentLog.referer">
+            <div style="word-break: break-all;">{{ currentLog.referer }}</div>
+          </a-descriptions-item>
+
+          <a-descriptions-item label="设备" v-if="currentLog.device">{{ currentLog.device }}</a-descriptions-item>
+          <a-descriptions-item label="操作系统" v-if="currentLog.os">{{ currentLog.os }}</a-descriptions-item>
+          <a-descriptions-item label="浏览器" v-if="currentLog.browser">{{ currentLog.browser }}</a-descriptions-item>
+          
           <a-descriptions-item label="User Agent">
             <div class="ua-full">{{ currentLog.user_agent }}</div>
           </a-descriptions-item>

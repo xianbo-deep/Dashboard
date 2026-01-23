@@ -24,7 +24,9 @@ use([
 ]);
 
 const loading = ref(false);
-const dateRange = ref([Date.now(), Date.now()]);
+const end = Date.now();
+const start = end - 30 * 24 * 60 * 60 * 1000;
+const dateRange = ref([start, end]);
 const mapOption = ref({});
 
 const registerMap = async () => {
@@ -115,7 +117,7 @@ onMounted(async () => {
 <template>
   <div class="map-container">
     <div class="toolbar">
-      <a-range-picker v-model="dateRange" style="width: 300px;" />
+      <a-range-picker v-model="dateRange" style="width: 360px;" show-time value-format="timestamp" />
     </div>
     <a-card class="map-card" :bordered="false">
       <div v-if="loading" class="loading-state">
