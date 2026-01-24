@@ -191,7 +191,8 @@ export function getWorldStats(start, end) {
   return apiClient.get('/admin/visitormap/map', { params }).then(data => {
       return (data || []).map(item => ({
           name: item.country,
-          value: item.count
+          // 根据后端返回 {"country":"Singapore","visitors":3} 修正字段映射
+          value: item.visitors || item.count
       }));
   });
 }
