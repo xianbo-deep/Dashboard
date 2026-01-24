@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPageStats, getAnalysisTrend, getPageDetail, getAnalysisMetrics, getRankings, getAnalysisPathSource } from '@/api/monitor';
+import { getPageStats, getAnalysisTrend, getAnalysisMetrics, getRankings, getAnalysisPathSource } from '@/api/monitor';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -242,29 +242,18 @@ const handleExpand = async (rowKey, record) => {
      const daysMap = { '3d': 3, '15d': 15, '30d': 30 };
      const days = daysMap[timeRange.value] || 15;
 
-     const [data, sourceData] = await Promise.all([
-        getPageDetail(record.path),
-        getAnalysisPathSource(record.path, days)
-     ]);
+     const data = await getAnalysisPathSource(record.path, days);
      
      // Process Sources
-     // Using sourceData from getAnalysisPathSource which supports days
-     const sourcesProcessed = (sourceData || []).map(item => ({
-        name: item.source,
-        value: item.count
-     }));
+     record.referers = (data.sources || []).map(s => ({
+       name: s.source,
+       value: s.percent
+     })).sort((a,b) => b.value - a.value).slice(0, 5); 
 
-     const totalSource = sourcesProcessed.reduce((sum, item) => sum + item.value, 0) || 1;
-     record.referers = sourcesProcessed.map(s => ({
-       name: s.name,
-       value: Math.round((s.value / totalSource) * 100)
-     })).sort((a,b) => b.value - a.value).slice(0, 5); // Status Top 5
-
-     // Process Devices (replacing locations)
-     const totalDevice = (data.devices || []).reduce((sum, item) => sum + item.value, 0) || 1;
+     // Process Devices
      record.devices = (data.devices || []).map(d => ({
-        name: d.name,
-        value: Math.round((d.value / totalDevice) * 100)
+        name: d.device,
+        value: d.percent
      })).sort((a,b) => b.value - a.value);
 
   } catch (e) {

@@ -322,7 +322,8 @@ export function getPageDetail(path) {
             return {
                 time: dateStr, 
                 pv: item.pv,
-                uv: item.uv
+                uv: item.uv,
+                timestamp: item.timestamp
             };
         });
 
