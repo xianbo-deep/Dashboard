@@ -192,7 +192,7 @@ export function getWorldStats(start, end) {
       return (data || []).map(item => ({
           name: item.country,
           // 根据后端返回 {"country":"Singapore","visitors":3} 修正字段映射
-          value: item.visitors || item.count
+          value: item.visitors
       }));
   });
 }
@@ -328,8 +328,8 @@ export function getPageDetail(path) {
             };
         });
 
-        const sources = (sourceData || []).map(item => ({
-            name: item.source,
+        const countries = (countryData || []).map(item => ({
+            name: item.country,
             value: item.count
         }));
 
@@ -347,7 +347,7 @@ export function getPageDetail(path) {
             path,
             stats,
             trend,
-            sources,
+            countries,
             devices
         };
     });

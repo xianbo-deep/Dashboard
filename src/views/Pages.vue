@@ -245,8 +245,8 @@ const handleExpand = async (rowKey, record) => {
      const data = await getAnalysisPathSource(record.path, days);
      
      // Process Sources
-     record.referers = (data.sources || []).map(s => ({
-       name: s.source,
+     record.referers = (data.countries || []).map(s => ({
+       name: s.country,
        value: s.percent
      })).sort((a,b) => b.value - a.value).slice(0, 5); 
 
