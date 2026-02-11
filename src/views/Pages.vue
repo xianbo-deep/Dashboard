@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPageStats, getAnalysisTrend } from '@/api/monitor';
+import { getPageStats, getAnalysisTrend, getAnalysisMetrics, getRankings, getAnalysisPathSource } from '@/api/monitor';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -67,7 +67,7 @@ const columns = [
 ];
 
 // --- Logic ---
-const initCharts = (trendData, pageData) => {
+const initCharts = (trendData, rankData) => {
   // Trend Chart
   const dates = trendData.map(i => i.date);
   const pvData = trendData.map(i => i.pv);
@@ -127,9 +127,9 @@ const initCharts = (trendData, pageData) => {
   };
 
   // Rank Chart (Top 10)
-  const sortedPages = [...pageData].sort((a, b) => b.pv - a.pv).slice(0, 10);
-  const paths = sortedPages.map(i => i.path);
-  const pvs = sortedPages.map(i => i.pv);
+  // rankData is expected to be from getRankings which returns { path, view_count }
+  const paths = rankData.map(i => i.path);
+  const pvs = rankData.map(i => i.view_count);
 
   rankOption.value = {
     backgroundColor: 'transparent',
@@ -185,25 +185,30 @@ const fetchData = async () => {
       const days = daysMap[timeRange.value] || 15;
       
       // Use real APIs
-      const trendData = await getAnalysisTrend(days);
-      const pageData = await getPageStats(days);
+      // 并行请求所有需要的数据
+      const [trendData, pageData, metricsData, rankData] = await Promise.all([
+          getAnalysisTrend(days),
+          getPageStats(days),        // 表格数据
+          getAnalysisMetrics(days),  // 统计指标
+          getRankings(days)          // 排行榜数据
+      ]);
 
-      // Update Metrics
-      const totalPv = pageData.reduce((acc, cur) => acc + cur.pv, 0);
-      const totalUv = pageData.reduce((acc, cur) => acc + cur.uv, 0);
-      const totalLatency = pageData.reduce((acc, cur) => acc + cur.avg_latency * cur.pv, 0);
-      
-      metrics.totalPv.value = totalPv;
-      metrics.totalUv.value = totalUv;
-      metrics.avgLatency.value = totalPv ? Math.round(totalLatency / totalPv) : 0;
+      // Update Metrics using dedicated API response
+      // Assuming metricsData structure corresponds to what backend returns (total_pv, total_uv, avg_latency)
+      // 根据通常的后端返回这里做一个简单适配，如果后端返回字段名不同请调整
+      metrics.totalPv.value = metricsData.totalPV || 0;
+      metrics.totalUv.value = metricsData.totalUV || 0;
+      metrics.avgLatency.value = Math.round(metricsData.avgLatency || 0);
+
+      // Trend or status logic remains similar for frontend visual
       metrics.avgLatency.status = metrics.avgLatency.value < 200 ? 'success' : metrics.avgLatency.value < 500 ? 'warning' : 'danger';
       
-      const topPage = [...pageData].sort((a, b) => b.pv - a.pv)[0];
-      metrics.topPath.value = topPage?.path || '/';
-      metrics.topPath.count = topPage?.pv || 0;
+      // Top Page from metricsData
+      metrics.topPath.value = metricsData.hotPage || '/';
+      metrics.topPath.count = metricsData.hotPagePV || 0;
 
       // Update Charts
-      initCharts(trendData, pageData);
+      initCharts(trendData, rankData);
 
       // Update Table
       const maxPv = Math.max(...pageData.map(i => i.pv)) || 1;
@@ -227,6 +232,35 @@ const filteredData = computed(() => {
 
 const handleTimeChange = () => {
   fetchData();
+};
+
+const handleExpand = async (rowKey, record) => {
+  if (record.referers || record.loadingDetail) return; // Already loaded or loading
+  
+  record.loadingDetail = true;
+  try {
+     const daysMap = { '3d': 3, '15d': 15, '30d': 30 };
+     const days = daysMap[timeRange.value] || 15;
+
+     const data = await getAnalysisPathSource(record.path, days);
+     
+     // Process Sources
+     record.referers = (data.countries || []).map(s => ({
+       name: s.country,
+       value: s.percent
+     })).sort((a,b) => b.value - a.value).slice(0, 5); 
+
+     // Process Devices
+     record.devices = (data.devices || []).map(d => ({
+        name: d.device,
+        value: d.percent
+     })).sort((a,b) => b.value - a.value);
+
+  } catch (e) {
+    console.error(e);
+  } finally {
+    record.loadingDetail = false;
+  }
 };
 
 onMounted(() => {
@@ -355,6 +389,7 @@ onMounted(() => {
         :bordered="false"
         row-key="path"
         hoverable
+        @expand="handleExpand"
         :expandable="{ width: 40 }"
       >
         <!-- Path Column -->
@@ -407,11 +442,12 @@ onMounted(() => {
         <!-- Expanded Row (Based on VisitLog) -->
         <template #expand-row="{ record }">
           <div class="expand-content">
+            <a-spin :loading="record.loadingDetail" style="width: 100%">
             <a-grid :cols="2" :colGap="40">
               <a-grid-item>
                 <div class="detail-section">
                   <div class="detail-title">来源分析</div>
-                  <div class="detail-list">
+                  <div class="detail-list" v-if="record.referers && record.referers.length">
                     <div v-for="ref in record.referers" :key="ref.name" class="detail-item">
                       <span class="detail-label">{{ ref.name }}</span>
                       <div class="detail-bar-wrapper">
@@ -420,25 +456,26 @@ onMounted(() => {
                       <span class="detail-val">{{ ref.value }}%</span>
                     </div>
                   </div>
+                  <div v-else class="no-data">暂无数据</div>
                 </div>
               </a-grid-item>
               <a-grid-item>
                 <div class="detail-section">
-                  <div class="detail-title">地区分布</div>
-                  <div class="detail-list">
-                    <div v-for="loc in record.locations" :key="loc.name" class="detail-item">
-                      <span class="detail-label">
-                        {{ loc.name }}
-                      </span>
+                  <div class="detail-title">设备分布</div>
+                  <div class="detail-list" v-if="record.devices && record.devices.length">
+                    <div v-for="dev in record.devices" :key="dev.name" class="detail-item">
+                      <span class="detail-label">{{ dev.name }}</span>
                       <div class="detail-bar-wrapper">
-                        <div class="detail-bar" :style="{ width: `${loc.value}%` }"></div>
+                        <div class="detail-bar" :style="{ width: `${dev.value}%` }"></div>
                       </div>
-                      <span class="detail-val">{{ loc.value }}%</span>
+                      <span class="detail-val">{{ dev.value }}%</span>
                     </div>
                   </div>
+                  <div v-else class="no-data">暂无数据</div>
                 </div>
               </a-grid-item>
             </a-grid>
+            </a-spin>
           </div>
         </template>
       </a-table>
@@ -668,6 +705,13 @@ onMounted(() => {
   width: 40px;
   text-align: right;
   color: #86909C;
+}
+
+.no-data {
+  color: #4E5969;
+  font-size: 13px;
+  padding: 8px 0;
+  font-style: italic;
 }
 
 /* Responsive */

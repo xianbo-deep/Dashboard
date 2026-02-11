@@ -4,6 +4,11 @@ on:
     branches:
      - main
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "dev"
 
 jobs:
   deploy:
@@ -11,6 +16,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -31,5 +39,16 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_DEPLOY_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "dist/*"
-          target: "/www/wwwroot/admin.xbzhong.cn/"
+          source: "dist/"
+          target: "/tmp/admin_dist/"
+
+      - name: Sync to web root
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_DEPLOY_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /www/wwwroot/admin.xbzhong.cn
+            rsync -av --delete /tmp/admin_dist/dist/ /www/wwwroot/admin.xbzhong.cn/
+            rm -rf /tmp/admin_dist

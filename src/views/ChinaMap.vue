@@ -24,7 +24,9 @@ use([
 ]);
 
 const loading = ref(false);
-const dateRange = ref([Date.now(), Date.now()]);
+const end = Date.now();
+const start = end - 7 * 24 * 60 * 60 * 1000;
+const dateRange = ref([start, end]);
 const mapOption = ref({});
 
 const registerMap = async () => {
@@ -40,7 +42,9 @@ const registerMap = async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    const data = await getChinaStats(dateRange.value);
+    // 拆分传递开始和结束时间
+    const [start, end] = dateRange.value || [];
+    const data = await getChinaStats(start, end);
     
     mapOption.value = {
       backgroundColor: 'transparent',
@@ -113,7 +117,7 @@ onMounted(async () => {
 <template>
   <div class="map-container">
     <div class="toolbar">
-      <a-range-picker v-model="dateRange" style="width: 300px;" />
+      <a-range-picker v-model="dateRange" style="width: 360px;" value-format="timestamp" />
     </div>
     <a-card class="map-card" :bordered="false">
       <div v-if="loading" class="loading-state">

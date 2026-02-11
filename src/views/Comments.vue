@@ -56,20 +56,22 @@ const initChart = (data) => {
   const series = [];
   
   // Helper for styles
+  // Neon Glow Line Style
   const commonLineStyle = (color) => ({
     width: 3,
     color: color,
     shadowColor: color,
-    shadowBlur: 15,
-    shadowOffsetY: 5
+    shadowBlur: 10,
+    shadowOffsetY: 0
   });
 
+  // Glassmorphism Gradient Area
   const commonAreaStyle = (r, g, b) => ({
     color: {
       type: 'linear',
       x: 0, y: 0, x2: 0, y2: 1,
       colorStops: [
-        { offset: 0, color: `rgba(${r}, ${g}, ${b}, 0.3)` },
+        { offset: 0, color: `rgba(${r}, ${g}, ${b}, 0.4)` },
         { offset: 1, color: `rgba(${r}, ${g}, ${b}, 0.0)` }
       ],
       global: false
@@ -82,7 +84,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#4080FF',
         borderColor: '#fff',
@@ -90,7 +92,8 @@ const initChart = (data) => {
       },
       data: comments,
       lineStyle: commonLineStyle('#4080FF'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(64, 128, 255) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(64, 128, 255) : undefined,
+      z: 3
     });
   }
   
@@ -100,7 +103,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#00E8CF',
         borderColor: '#fff',
@@ -108,7 +111,8 @@ const initChart = (data) => {
       },
       data: replies,
       lineStyle: commonLineStyle('#00E8CF'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(0, 232, 207) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(0, 232, 207) : undefined,
+      z: 2
     });
   }
   
@@ -118,7 +122,7 @@ const initChart = (data) => {
       type: 'line',
       smooth: true,
       showSymbol: false,
-      symbolSize: 10,
+      symbolSize: 8,
       itemStyle: { 
         color: '#FF7D00',
         borderColor: '#fff',
@@ -126,7 +130,8 @@ const initChart = (data) => {
       },
       data: reactions,
       lineStyle: commonLineStyle('#FF7D00'),
-      areaStyle: chartType.value !== 'all' ? commonAreaStyle(255, 125, 0) : undefined
+      areaStyle: chartType.value !== 'all' ? commonAreaStyle(255, 125, 0) : undefined,
+      z: 1
     });
   }
 
@@ -134,33 +139,26 @@ const initChart = (data) => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 20, 0.4)',
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
       borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       textStyle: { color: '#fff' },
-      padding: [16, 20],
-      extraCssText: 'backdrop-filter: blur(12px); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);',
+      padding: [12, 16],
+      extraCssText: 'backdrop-filter: blur(10px); border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);',
       axisPointer: {
         type: 'line',
         lineStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(255, 255, 255, 0)' },
-              { offset: 0.5, color: 'rgba(255, 255, 255, 0.3)' },
-              { offset: 1, color: 'rgba(255, 255, 255, 0)' }
-            ]
-          },
-          width: 1
+          color: 'rgba(255, 255, 255, 0.3)',
+          width: 1, 
+          type: 'dashed'
         }
       },
       formatter: (params) => {
-        let result = `<div style="margin-bottom: 10px; font-weight: 500; color: rgba(255,255,255,0.7); font-size: 12px; letter-spacing: 0.5px;">${params[0].axisValue}</div>`;
+        let result = `<div style="margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8); font-size: 12px;">${params[0].axisValue}</div>`;
         params.forEach(item => {
-          const dot = `<span style="display:inline-block;margin-right:8px;border-radius:50%;width:8px;height:8px;background-color:${item.color};box-shadow: 0 0 5px ${item.color}"></span>`;
-          result += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 30px; margin-top: 8px;">
-            <span style="color: #fff; font-size: 13px; font-weight: 500;">${dot}${item.seriesName}</span>
+          const dot = `<span style="display:inline-block;margin-right:8px;border-radius:50%;width:8px;height:8px;background-color:${item.color};box-shadow: 0 0 6px ${item.color}"></span>`;
+          result += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 6px;">
+            <span style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">${dot}${item.seriesName}</span>
             <span style="font-weight: 600; color: #fff; font-family: 'DIN Alternate', sans-serif; font-size: 14px;">${item.value}</span>
           </div>`;
         });
@@ -170,32 +168,47 @@ const initChart = (data) => {
     legend: {
       show: chartType.value === 'all',
       data: ['Comments', 'Replies', 'Reactions'],
-      textStyle: { color: '#86909C' },
-      icon: 'roundRect',
-      itemWidth: 12,
-      itemHeight: 4,
+      textStyle: { color: 'rgba(255, 255, 255, 0.6)' },
+      icon: 'circle',
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 20,
       top: 0,
       right: 0
     },
     grid: {
-      left: '0%',
-      right: '0%',
-      bottom: '0%',
-      top: '35',
+      left: '1%',
+      right: '2%',
+      bottom: '5%',
+      top: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: dates,
-      axisLine: { show: true, lineStyle: { color: 'rgba(255, 255, 255, 0.08)' } },
+      axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#86909C', fontSize: 12, margin: 12 }
+      axisLabel: { 
+        color: 'rgba(255, 255, 255, 0.4)', 
+        fontSize: 11, 
+        margin: 16,
+        interval: 'auto',
+        hideOverlap: true
+      }
     },
     yAxis: {
       type: 'value',
-      splitLine: { show: true, lineStyle: { type: 'dashed', color: 'rgba(255, 255, 255, 0.04)' } },
-      axisLabel: { color: '#86909C' },
+      min: 0,
+      minInterval: 1,
+      splitLine: { 
+        show: true, 
+        lineStyle: { 
+          type: 'dashed', 
+          color: 'rgba(255, 255, 255, 0.05)' 
+        } 
+      },
+      axisLabel: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 11 },
       splitNumber: 3
     },
     series: series
@@ -216,21 +229,43 @@ const fetchTrend = async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    await Promise.all([
-      fetchStats(),
-      fetchTrend(),
-      getCommentActivities().then(res => activities.value = res),
-      getTopContributors().then(res => contributors.value = res)
+    const [statsRes, trendRes, activitiesRes, contributorsRes] = await Promise.all([
+      getCommentStats(statsDays.value),
+      getInteractionTrend(trendDays.value),
+      getCommentActivities(feedLimit.value),
+      getTopContributors()
     ]);
+
+    stats.value = statsRes;
+    
+    trendData.value = trendRes;
+    initChart(trendRes);
+
+    console.log('Fetched activities:', activitiesRes);
+    activities.value = activitiesRes || [];
+    
+    contributors.value = contributorsRes;
+    console.log('Fetched contributors:', contributorsRes); // Debug log
+
   } catch (err) {
-    console.error(err);
+    console.error('Fetch data error:', err);
   } finally {
     loading.value = false;
   }
 };
 
 const displayedActivities = computed(() => {
-  return activities.value.slice(0, feedLimit.value);
+  return (activities.value || []).slice(0, feedLimit.value);
+});
+
+watch(feedLimit, () => {
+  // 当下拉框变化时，重新请求数据
+  loading.value = true;
+  getCommentActivities(feedLimit.value)
+    .then(res => {
+        activities.value = res || [];
+    })
+    .finally(() => loading.value = false);
 });
 
 watch(chartType, () => {
@@ -243,12 +278,43 @@ onMounted(() => {
 
 const getActionColor = (action) => {
   switch (action) {
-    case 'commented': return 'arcoblue';
-    case 'replied': return 'green';
-    case 'reacted': return 'red';
+    case 'comment': return 'arcoblue';
+    case 'reply': return 'green';
+    case 'reaction': return 'red';
     default: return 'gray';
   }
 };
+
+const reactionMap = {
+  'THUMBS_UP': '👍',
+  'THUMBS_DOWN': '👎',
+  'LAUGH': '😄',
+  'HOORAY': '🎉',
+  'CONFUSED': '😕',
+  'HEART': '❤️',
+  'ROCKET': '🚀',
+  'EYES': '👀'
+};
+
+const formatContent = (item) => {
+  if (item.type === 'reaction') {
+    return reactionMap[item.content] || item.content;
+  }
+  return item.content;
+};
+
+const getActionText = (action) => {
+    switch (action) {
+        case 'comment': return 'commented on';
+        case 'reply': return 'replied on';
+        case 'reaction': return 'reacted to';
+        default: return action;
+    }
+}
+
+const openLink = (url) => {
+    if(url) window.open(url, '_blank');
+}
 </script>
 
 <template>
@@ -333,8 +399,17 @@ const getActionColor = (action) => {
           <div v-for="(user, idx) in contributors" :key="user.id" class="contributor-item">
             <div class="rank" :class="{ top: idx < 3 }">{{ idx + 1 }}</div>
             <a-avatar :size="32" :image-url="user.avatar" />
-            <div class="user-name">{{ user.name }}</div>
-            <div class="user-count">{{ user.count }}</div>
+            <div class="user-info-wraper">
+                <div 
+                    class="user-name aurora-text" 
+                    :class="{ clickable: !!user.url }" 
+                    @click="user.url && openLink(user.url)" 
+                    :title="user.url"
+                >
+                    {{ user.name }}
+                </div>
+                <div class="user-count">{{ user.count }} interactions</div>
+            </div>
           </div>
         </div>
       </a-card>
@@ -344,8 +419,8 @@ const getActionColor = (action) => {
     <a-card class="feed-card" :bordered="false">
       <template #title>
         <div class="feed-header-row">
-          <span>最新动态</span>
-          <a-select v-model="feedLimit" :style="{width:'120px'}" size="small">
+          <span class="section-title">最新动态</span>
+          <a-select v-model="feedLimit" class="glass-select" :style="{width:'120px'}" size="small">
             <a-option :value="5">最近 5 条</a-option>
             <a-option :value="10">最近 10 条</a-option>
             <a-option :value="20">最近 20 条</a-option>
@@ -353,37 +428,67 @@ const getActionColor = (action) => {
         </div>
       </template>
       <div class="feed-list">
-        <a-skeleton :loading="loading" animation>
-          <div v-if="loading">
-            <a-skeleton-line :rows="3" />
-          </div>
-          <div v-else>
-            <div v-for="item in displayedActivities" :key="item.id" class="feed-item">
-              <div class="feed-avatar">
-                <img :src="item.avatar" alt="avatar" />
+        <!-- Manual Loading State -->
+        <div v-if="loading" class="loading-state">
+           <a-spin dot />
+        </div>
+        <div v-else class="feed-content-list">
+            <div v-if="displayedActivities.length === 0" class="empty-state">
+                <a-empty description="暂无动态" />
+            </div>
+            
+            <div v-for="item in displayedActivities" :key="item.id" class="feed-card-item">
+              <!-- Left Side: Avatar -->
+              <div class="item-avatar">
+                 <a :href="item.userUrl" target="_blank" class="avatar-link">
+                    <img :src="item.avatar" alt="avatar" />
+                 </a>
               </div>
-              <div class="feed-content">
-                <div class="feed-header">
-                  <span class="feed-user">{{ item.user }}</span>
-                  <span class="feed-action">{{ item.action }} on</span>
-                  <span class="feed-target">{{ item.target }}</span>
-                  <span class="feed-time">{{ item.time }}</span>
+
+              <!-- Right Side: Content -->
+              <div class="item-main">
+                <!-- Header: Who did what where -->
+                <div class="item-header">
+                   <div class="header-left">
+                      <a :href="item.userUrl" target="_blank" class="user-link aurora-text">{{ item.user }}</a>
+                      
+                      <span class="action-badge" :class="item.action">
+                         <icon-message v-if="item.action === 'comment'" /> 
+                         <icon-user-group v-else-if="item.action === 'reply'" />
+                         <icon-heart v-else-if="item.action === 'reaction'" />
+                         <span class="action-text">{{ getActionText(item.action).replace(' on', '').replace(' to', '') }}</span>
+                      </span>
+
+                      <span class="target-link" @click="openLink(item.url)" :title="item.url || item.target">
+                        {{ item.target }}
+                      </span>
+                   </div>
+                   <div class="header-right">
+                       <span class="time-text">{{ item.time }}</span>
+                   </div>
                 </div>
-                <div class="feed-body">
-                  <div v-if="item.type === 'reacted'" class="reaction-content">
-                    {{ item.content }}
-                  </div>
-                  <div v-else class="text-content">
-                    {{ item.content }}
-                  </div>
+
+                <!-- Body Content -->
+                <div class="item-body">
+                   <!-- Reaction is special -->
+                   <div v-if="item.type === 'reaction'" class="reaction-display">
+                      {{ formatContent(item) }}
+                   </div>
+                   <div v-else class="text-display">
+                      {{ item.content }}
+                   </div>
                 </div>
-              </div>
-              <div class="feed-tag">
-                <a-tag :color="getActionColor(item.action)" size="small">{{ item.action }}</a-tag>
+
+                <!-- Quote / Context -->
+                <div v-if="item.replyTo && item.replyTo.name && (item.action === 'reply' || item.action === 'comment')" class="quote-container">
+                   <div class="quote-header">
+                      Replying to <span class="quote-user">@{{ item.replyTo.name }}</span>
+                   </div>
+                   <div class="quote-content">{{ item.replyTo.content }}</div>
+                </div>
               </div>
             </div>
-          </div>
-        </a-skeleton>
+        </div>
       </div>
     </a-card>
   </div>
@@ -393,8 +498,9 @@ const getActionColor = (action) => {
 .comments-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .toolbar {
@@ -405,21 +511,26 @@ const getActionColor = (action) => {
 
 .page-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #fff, #b4b8bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 /* KPI Cards */
 .kpi-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  transition: transform 0.3s;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 .kpi-card:hover {
   transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .kpi-content {
@@ -429,117 +540,180 @@ const getActionColor = (action) => {
 }
 
 .kpi-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  transition: transform 0.3s;
 }
-.kpi-icon-wrapper.blue { background: rgba(22, 93, 255, 0.2); color: #165DFF; }
-.kpi-icon-wrapper.green { background: rgba(0, 180, 42, 0.2); color: #00B42A; }
-.kpi-icon-wrapper.red { background: rgba(245, 63, 63, 0.2); color: #F53F3F; }
+.kpi-card:hover .kpi-icon-wrapper {
+  transform: scale(1.1);
+}
+.kpi-icon-wrapper.blue { background: rgba(22, 93, 255, 0.15); color: #4080FF; }
+.kpi-icon-wrapper.green { background: rgba(0, 180, 42, 0.15); color: #00E8CF; }
+.kpi-icon-wrapper.red { background: rgba(245, 63, 63, 0.15); color: #FF7D00; }
 
 .kpi-info {
   display: flex;
   flex-direction: column;
 }
 .kpi-label {
-  color: var(--color-text-3);
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
 }
 .kpi-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 28px;
+  font-weight: 700;
   font-family: 'DIN Alternate', sans-serif;
   color: #fff;
+  line-height: 1.2;
 }
 
 /* Middle Row */
 .middle-row {
   display: flex;
-  gap: 16px;
-  height: 350px;
+  gap: 20px;
+  height: 380px;
+}
+.chart-card, .contributors-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
 }
 .chart-card {
   flex: 2;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
+}
+.chart-card :deep(.arco-card-header), .contributors-card :deep(.arco-card-header) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 .chart-card :deep(.arco-card-body) {
-  padding: 0 12px 12px;
+  padding: 0 16px 16px;
   height: 100%;
-  box-sizing: border-box;
 }
 .contributors-card {
   flex: 1;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
 }
 .contributors-card :deep(.arco-card-body) {
   flex: 1;
   overflow: hidden;
-  padding: 0 12px 12px;
+  padding: 12px;
 }
 
-.chart {
-  width: 100%;
-  height: 100%;
-}
-
-/* Contributors List */
+/* Contributors List Advanced Interaction */
 .contributors-list {
   height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding-right: 4px;
 }
+/* Scrollbar styling */
+.contributors-list::-webkit-scrollbar {
+    width: 4px;
+}
+.contributors-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
 .contributor-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.02);
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.3s;
 }
+.contributor-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
 .rank {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--color-text-3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
 }
 .rank.top {
-  background: #F7BA1E;
-  color: #000;
+  background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(253, 185, 49, 0.3);
 }
-.user-name {
-  flex: 1;
+
+.user-info-wraper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Advanced Hover Effect for User Name */
+.aurora-text {
+  font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+  transition: all 0.3s ease;
 }
+
+.aurora-text.clickable {
+    cursor: pointer;
+}
+
+/* Animated Underline Effect */
+.aurora-text.clickable::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(90deg, #165DFF, #00E8CF);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s ease-out;
+  box-shadow: 0 0 8px rgba(22, 93, 255, 0.5);
+}
+
+.aurora-text.clickable:hover {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(22, 93, 255, 0.6);
+}
+
+.aurora-text.clickable:hover::after {
+  transform: scaleX(1);
+}
+
 .user-count {
-  font-family: 'DIN Alternate', sans-serif;
-  font-weight: bold;
-  color: #165DFF;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
 }
 
 /* Feed */
 .feed-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  /* Removed min-height to let it shrink */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
 }
 
 .feed-header-row {
@@ -547,73 +721,166 @@ const getActionColor = (action) => {
   justify-content: space-between;
   align-items: center;
 }
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+}
 
 .feed-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px; /* spacing between cards */
+  padding: 8px 0;
 }
 
-.feed-item {
+/* Modern Card Style for Feed Items */
+.feed-card-item {
   display: flex;
   gap: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.feed-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.feed-avatar img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #333;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.feed-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.feed-card-item:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.feed-header {
-  font-size: 13px;
-  color: var(--color-text-3);
+.item-avatar img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s;
 }
-.feed-user {
-  color: #fff;
-  font-weight: bold;
-  margin-right: 4px;
-}
-.feed-action {
-  margin-right: 4px;
-}
-.feed-target {
-  color: #165DFF;
-  cursor: pointer;
-  margin-right: 8px;
-}
-.feed-time {
-  font-size: 12px;
-  color: var(--color-text-4);
+.item-avatar img:hover {
+    transform: rotate(10deg) scale(1.05);
+    border-color: #165DFF;
 }
 
-.feed-body {
-  font-size: 14px;
-  color: var(--color-text-1);
-  margin-top: 2px;
+.item-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.reaction-content {
-  font-size: 18px;
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.feed-tag {
-  display: flex;
-  align-items: flex-start;
+.user-link {
+    font-size: 15px; 
+    font-weight: 600; 
+    text-decoration: none;
+    letter-spacing: 0.3px;
+}
+/* Re-use aurora effect logic simplified for feed username if valid */
+.user-link:hover {
+    color: #165DFF;
+    text-shadow: 0 0 10px rgba(22, 93, 255, 0.4);
+}
+
+/* Integrated Action Badge */
+.action-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+.action-badge.comment { color: #4080FF; background: rgba(64, 128, 255, 0.1); }
+.action-badge.reply { color: #00E8CF; background: rgba(0, 232, 207, 0.1); }
+.action-badge.reaction { color: #FF7D00; background: rgba(255, 125, 0, 0.1); }
+
+.target-link {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.2s;
+    position: relative;
+    padding-left: 12px;
+}
+.target-link::before {
+    content: '/';
+    position: absolute;
+    left: 2px;
+    color: rgba(255, 255, 255, 0.3);
+}
+.target-link:hover {
+    color: #165DFF;
+}
+
+.header-right .time-text {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Inter', sans-serif;
+}
+
+.item-body {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+
+/* Reaction Content Big Emoji */
+.reaction-display {
+    font-size: 24px;
+    line-height: 1.2;
+    padding: 4px 0;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+}
+
+/* Enhanced Quote Block */
+.quote-container {
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, rgba(22, 93, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border-left: 3px solid #165DFF;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+}
+
+.quote-header {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 4px;
+}
+.quote-user {
+    color: #4080FF;
+    font-weight: 500;
+}
+.quote-content {
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
 }
 </style>

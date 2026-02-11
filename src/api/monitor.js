@@ -19,17 +19,19 @@ apiClient.interceptors.request.use(config => {
 // Response interceptor to unwrap data
 apiClient.interceptors.response.use(response => {
   const res = response.data;
-  if (res.code === 200) {
+  // 兼容 code=0 或 code=200 为成功状态
+  if (res.code === 200 || res.code === 0) {
     return res.data;
   } else {
-    if (res.code === 401) {
+    // 排除登录接口，避免登录失败时刷新页面
+    if (res.code === 401 && !response.config.url.includes('/login')) {
         localStorage.removeItem('token');
         window.location.href = '/login';
     }
     return Promise.reject(new Error(res.message || 'Error'));
   }
 }, error => {
-  if (error.response && error.response.status === 401) {
+  if (error.response && error.response.status === 401 && !(error.config && error.config.url.includes('/login'))) {
     localStorage.removeItem('token');
     window.location.href = '/login';
   }
@@ -57,6 +59,56 @@ export function getTrendData() {
   });
 }
 
+
+
+export function getDashboardSummary() {
+    return apiClient.get('/admin/dashboard/summary');
+}
+
+export function getDashboardInsights(limit = 10) {
+    return apiClient.get('/admin/dashboard/insights', { params: { limit } });
+}
+
+// --- Access Logs ---
+
+export function getLogs(params) {
+  const query = {
+      page: params.page || 1,
+      page_size: params.pageSize || 10,
+      path: params.path,
+      ip: params.ip,
+      method: params.method,
+      status: params.status,
+      latency: params.latency,
+      start: params.startTime || params.start,
+      end: params.endTime || params.end
+  };
+
+  // If keyword is present, it might need to be handled. 
+  // Since the user provided struct doesn't have 'keyword', 
+  // we might want to map it to 'path' or 'ip' if one is detected, 
+  // or pass it along if the backend possibly supports it (custom binding).
+  // For now, let's keep it to avoid breaking if backend supports it hiddenly.
+  if (params.keyword) {
+      query.keyword = params.keyword;
+      // Heuristic: if keyword looks like IP, send as IP?
+      // For now, trust the backend or user's future instruction.
+  }
+  
+  // Clean undefined
+  Object.keys(query).forEach(key => query[key] === undefined && delete query[key]);
+
+  return apiClient.get('/admin/accesslog/logs', { params: query });
+}
+
+// ==========================================
+//                 ANALYSIS (PAGES)
+// ==========================================
+
+export function getAnalysisMetrics(days = 7) {
+  return apiClient.get('/admin/analysis/metrics', { params: { days } });
+}
+
 export function getAnalysisTrend(days = 7) {
   return apiClient.get('/admin/analysis/trend', { params: { days } }).then(data => {
     return data.map(item => {
@@ -80,51 +132,28 @@ export function getRankings(days = 7) {
   });
 }
 
-export function getDashboardSummary() {
-    return apiClient.get('/admin/dashboard/summary');
-}
-
-export function getDashboardInsights() {
-    return apiClient.get('/admin/dashboard/insights');
-}
-
-// --- Access Logs ---
-
-export function getLogs(params) {
-  const query = {
+export function getAnalysisPath(params, days = 7) {
+   const query = {
       page: params.page || 1,
       page_size: params.pageSize || 10,
-      ...params
+      days,
+      path: params.path
   };
-  return apiClient.get('/admin/accesslog/logs', { params: query }).then(data => {
-      // Backend returns { list: [], total: ... }
-      return data;
-  });
+  return apiClient.get('/admin/analysis/path', { params: query });
 }
 
-// --- Page Analysis ---
+export function getAnalysisPathSource(path, days = 7) {
+  return apiClient.get('/admin/analysis/source', { params: { path, days } });
+}
 
-export function getPageStats(queryOrType) {
-  let days = 30;
-  if (typeof queryOrType === 'string') {
-      days = queryOrType === 'today' ? 1 : 30;
-  } else if (typeof queryOrType === 'number') {
-      days = queryOrType;
-  }
-
-  const params = {
-      page: 1,
-      page_size: 100,
-      days
-  };
-  
-  return apiClient.get('/admin/analysis/querypath', { params }).then(res => {
-     return res.list.map(item => ({
-         path: item.path,
-         pv: item.pv,
-         uv: item.uv,
-         avg_latency: item.avg_latency
-     }));
+export function getPageStats(days = 7) {
+  return getAnalysisPath({ page: 1, pageSize: 100 }, days).then(res => {
+      return res.list.map(item => ({
+          path: item.path,
+          pv: item.pv,
+          uv: item.uv,
+          avg_latency: item.avgLatency
+      }));
   });
 }
 
@@ -132,7 +161,7 @@ export function getPageStats(queryOrType) {
 
 export function getPerformanceTrend() {
   return apiClient.get('/admin/performance/averageDelay').then(data => {
-      return data.map(item => {
+      return (data || []).map(item => {
           const d = new Date(item.time);
           const hour = d.getHours().toString().padStart(2, '0') + ':00';
           return {
@@ -143,10 +172,10 @@ export function getPerformanceTrend() {
   });
 }
 
-export function getSlowestPages() {
-  return apiClient.get('/admin/performance/slowPages').then(data => {
+export function getSlowestPages(limit = 10) {
+  return apiClient.get('/admin/performance/slowPages', { params: { limit } }).then(data => {
       // Backend returns []SlowDelayItem { path, avg_delay }
-      return data.map(item => ({
+      return (data || []).map(item => ({
           path: item.path,
           avg_latency: item.avg_delay
       }));
@@ -155,18 +184,25 @@ export function getSlowestPages() {
 
 // --- Visitor Map ---
 
-export function getWorldStats(date) {
-  return apiClient.get('/admin/visitormap/map').then(data => {
-      return data.map(item => ({
+export function getWorldStats(start, end) {
+    const params = {};
+    if (start) params.startTime = start;
+    if (end) params.endTime = end;
+  return apiClient.get('/admin/visitormap/map', { params }).then(data => {
+      return (data || []).map(item => ({
           name: item.country,
-          value: item.count
+          // 根据后端返回 {"country":"Singapore","visitors":3} 修正字段映射
+          value: item.visitors
       }));
   });
 }
 
-export function getChinaStats(date) {
-  return apiClient.get('/admin/visitormap/chineseMap').then(data => {
-      return data.map(item => ({
+export function getChinaStats(start, end) {
+    const params = {};
+    if (start) params.startTime = start;
+    if (end) params.endTime = end;
+  return apiClient.get('/admin/visitormap/chineseMap', { params }).then(data => {
+      return (data || []).map(item => ({
           name: item.province || item.name, 
           value: item.count
       }));
@@ -202,18 +238,50 @@ export function getCommentStats(days = 7) {
   });
 }
 
-export function getCommentActivities() {
-   return apiClient.get('/admin/discussionmap/feed', { params: { limit: 50 } }).then(data => {
-       return data.map(item => ({
-           id: item.url + item.time,
-           user: item.name,
-           avatar: item.avatar,
-           action: item.event_type,
-           target: item.path,
-           content: item.content,
-           time: item.time,
-           type: item.event_type
-       }));
+export function getCommentActivities(limit = 5) {
+   return apiClient.get('/admin/discussionmap/feed', { params: { limit } }).then(data => {
+       // Handle different response structures (direct array or wrapped in list/items)
+       let list = [];
+       if (Array.isArray(data)) {
+           list = data;
+       } else if (data && Array.isArray(data.list)) {
+           list = data.list;
+       } else if (data && Array.isArray(data.items)) {
+           list = data.items;
+       }
+
+       console.log('Raw feed data:', list); // Debug log
+
+       return list.map((item, index) => {
+           // Parse path to get a shorter target name if possible
+           let targetDisplay = item.path;
+           try {
+               if (item.path.startsWith('http')) {
+                   const urlObj = new URL(item.path);
+                   targetDisplay = urlObj.pathname;
+                   if (targetDisplay === '/' || targetDisplay === '') targetDisplay = 'Home';
+               }
+           } catch (e) { /* ignore */ }
+
+           return {
+               id: `${item.name}-${item.timestamp}-${index}`, // Unique ID
+               user: item.name,
+               userUrl: item.url, // User profile URL (e.g. GitHub)
+               avatar: item.avatar,
+               action: item.event_type, // "comment", "reaction", "reply"
+               target: targetDisplay, 
+               content: item.content,
+               url: item.path, // Content URL (e.g. Blog Post)
+               time: item.time ? new Date(item.time).toLocaleString() : '',
+               timestamp: item.timestamp,
+               type: item.event_type,
+               replyTo: {
+                   name: item.replyToName,
+                   avatar: item.replyToAvatar,
+                   content: item.replyToContent
+               }
+           };
+       });
    });
 }
 
@@ -223,7 +291,7 @@ export function getInteractionTrend(days = 7) {
             date: item.date,
             comments: item.totalComments,
             replies: item.totalReplies,
-            reactions: item.totalResponses || item.totalReactions 
+            reactions: item.totalResponses // Matching struct json:"totalResponses"
         }));
     });
 }
@@ -233,6 +301,7 @@ export function getTopContributors() {
         return data.map(item => ({
             name: item.name,
             avatar: item.avatar,
+            url: item.url, // User profile URL
             count: item.totalFeeds
         }));
     });
@@ -248,35 +317,39 @@ export function getPageDetail(path) {
 
     return Promise.all([p1, p2, p3, p4]).then(([trendData, sourceData, deviceData, metricData]) => {
         
-        const trend = trendData.map(item => ({
-            time: item.date, 
-            pv: item.pv,
-            uv: item.uv
-        }));
+        const trend = (trendData || []).map(item => {
+            const dateObj = new Date(item.date);
+            const dateStr = `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            return {
+                time: dateStr, 
+                pv: item.pv,
+                uv: item.uv,
+                timestamp: item.timestamp
+            };
+        });
 
-        const sources = sourceData.map(item => ({
-            name: item.source,
+        const countries = (countryData || []).map(item => ({
+            name: item.country,
             value: item.count
         }));
 
-        const devices = deviceData.map(item => ({
+        const devices = (deviceData || []).map(item => ({
             name: item.device,
             value: item.count
         }));
 
         const stats = {
-            pv: metricData.pv || 0,
-            uv: metricData.uv || 0,
-            avgTime: '0s', 
-            bounceRate: '0%' 
+            pv: metricData?.pv || 0,
+            uv: metricData?.uv || 0
         };
 
         return {
             path,
             stats,
             trend,
-            sources,
+            countries,
             devices
         };
     });
 }
+
