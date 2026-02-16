@@ -60,9 +60,9 @@ const rankOption = ref({});
 // --- Table Columns ---
 const columns = [
   { title: '路径', dataIndex: 'path', slotName: 'path', width: 300, ellipsis: true },
-  { title: 'PV', dataIndex: 'pv', slotName: 'pv', sortable: { sortDirections: ['descend', 'ascend'] }, width: 150 },
-  { title: 'UV', dataIndex: 'uv', slotName: 'uv', sortable: { sortDirections: ['descend', 'ascend'] }, width: 150 },
-  { title: '平均延迟', dataIndex: 'avg_latency', slotName: 'latency', sortable: { sortDirections: ['descend', 'ascend'] }, width: 150 },
+  { title: 'PV', dataIndex: 'pv', slotName: 'pv', sortable: { sortDirections: ['descend', 'ascend'] }, width: 140 },
+  { title: 'UV', dataIndex: 'uv', slotName: 'uv', sortable: { sortDirections: ['descend', 'ascend'] }, width: 140 },
+  { title: '平均延迟', dataIndex: 'avg_latency', slotName: 'latency', sortable: { sortDirections: ['descend', 'ascend'] }, width: 140 },
   { title: '操作', slotName: 'actions', width: 100, align: 'center' }
 ];
 
@@ -77,32 +77,33 @@ const initCharts = (trendData, rankData) => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(29, 33, 41, 0.9)',
-      borderColor: 'rgba(255, 255, 255, 0.1)',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(30, 30, 35, 0.95)',
+      borderColor: '#374151',
+      textStyle: { color: '#F9FAFB' },
+      padding: [12, 16],
     },
     legend: {
       data: ['PV', 'UV'],
       top: 0,
-      right: 0,
-      textStyle: { color: '#86909C' },
+      right: 10,
+      textStyle: { color: '#9CA3AF' },
       icon: 'circle',
       itemWidth: 8,
       itemHeight: 8
     },
-    grid: { left: 0, right: 0, bottom: 0, top: 30, containLabel: true },
+    grid: { left: '2%', right: '2%', bottom: '2%', top: '40', containLabel: true },
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: dates,
-      axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } },
-      axisLabel: { color: '#86909C' },
+      axisLine: { show: false },
+      axisLabel: { color: '#6B7280', margin: 16 },
       axisTick: { show: false }
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { type: 'dashed', color: 'rgba(255, 255, 255, 0.05)' } },
-      axisLabel: { color: '#86909C' }
+      splitLine: { lineStyle: { type: 'dashed', color: 'rgba(255, 255, 255, 0.08)' } },
+      axisLabel: { color: '#6B7280' }
     },
     series: [
       {
@@ -110,8 +111,15 @@ const initCharts = (trendData, rankData) => {
         type: 'line',
         smooth: true,
         showSymbol: false,
-        itemStyle: { color: '#165DFF' },
-        lineStyle: { width: 2 },
+        symbolSize: 6,
+        itemStyle: { color: '#6366f1' }, // Indigo-500
+        lineStyle: { width: 3, shadowColor: 'rgba(99, 102, 241, 0.3)', shadowBlur: 10 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(99, 102, 241, 0.4)' },
+            { offset: 1, color: 'rgba(99, 102, 241, 0.0)' }
+          ])
+        },
         data: pvData
       },
       {
@@ -119,8 +127,15 @@ const initCharts = (trendData, rankData) => {
         type: 'line',
         smooth: true,
         showSymbol: false,
-        itemStyle: { color: '#14C9C9' },
-        lineStyle: { width: 2 },
+        symbolSize: 6,
+        itemStyle: { color: '#14b8a6' }, // Teal-500
+        lineStyle: { width: 3, shadowColor: 'rgba(20, 184, 166, 0.3)', shadowBlur: 10 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(20, 184, 166, 0.4)' },
+            { offset: 1, color: 'rgba(20, 184, 166, 0.0)' }
+          ])
+        },
         data: uvData
       }
     ]
@@ -136,11 +151,12 @@ const initCharts = (trendData, rankData) => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(29, 33, 41, 0.9)',
-      borderColor: 'rgba(255, 255, 255, 0.1)',
-      textStyle: { color: '#fff' }
+      backgroundColor: 'rgba(30, 30, 35, 0.95)',
+      borderColor: '#374151',
+      textStyle: { color: '#F9FAFB' },
+      padding: [12, 16]
     },
-    grid: { left: 0, right: 20, bottom: 0, top: 0, containLabel: true },
+    grid: { left: 0, right: 30, bottom: 0, top: 0, containLabel: true },
     xAxis: {
       type: 'value',
       splitLine: { show: false },
@@ -151,7 +167,7 @@ const initCharts = (trendData, rankData) => {
       data: paths,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#C9CDD4', width: 120, overflow: 'truncate' },
+      axisLabel: { color: '#9CA3AF', width: 110, overflow: 'truncate', formatter: (val) => val },
       inverse: true
     },
     series: [
@@ -159,12 +175,17 @@ const initCharts = (trendData, rankData) => {
         name: 'PV',
         type: 'bar',
         data: pvs,
-        barWidth: 8,
+        barWidth: 12,
+        showBackground: true,
+        backgroundStyle: { color: 'rgba(255, 255, 255, 0.05)', borderRadius: 6 },
         itemStyle: {
-          borderRadius: 4,
-          color: '#165DFF'
+          borderRadius: 6,
+          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: '#6366f1' }, // Indigo-500
+            { offset: 1, color: '#818cf8' }  // Indigo-400
+          ])
         },
-        label: { show: true, position: 'right', color: '#86909C' }
+        label: { show: true, position: 'right', color: '#fff', fontSize: 12, fontWeight: 'bold' }
       }
     ]
   };
@@ -497,54 +518,17 @@ onMounted(() => {
 
 /* --- KPI Cards (Dashboard Style) --- */
 .stat-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(30, 30, 35, 0.6);
   backdrop-filter: blur(10px);
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Consistent border */
   transition: all 0.3s;
-  border: none; /* Remove border to match dashboard style */
 }
 .stat-card:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stat-label {
-  color: var(--color-text-3);
-  font-size: 14px;
-}
-
-.stat-unit {
-  margin-left: 4px;
-  font-size: 14px;
-  color: var(--color-text-3);
-  font-weight: normal;
-}
-
-.top-page-path {
-  font-family: monospace;
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-.top-page-count {
-  font-size: 12px;
-  color: var(--color-text-3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  background: rgba(40, 40, 45, 0.8);
+  border-color: rgba(99, 102, 241, 0.3); /* Subtle highlight color */
 }
 
 /* --- Charts Grid --- */
@@ -555,28 +539,45 @@ onMounted(() => {
 }
 
 .chart-panel {
-  background: rgba(255, 255, 255, 0.04); /* Glassmorphism */
+  background: rgba(30, 30, 35, 0.6);
   backdrop-filter: blur(10px);
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .panel-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #F2F3F5;
+  color: #F3F4F6;
+  position: relative;
+  padding-left: 12px;
+}
+.panel-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background: #6366f1; /* Accent color */
+  border-radius: 2px;
 }
 
 .chart-wrapper {
-  height: 250px;
+  height: 300px; /* Taller charts */
   width: 100%;
+  flex: 1;
 }
 .chart {
   width: 100%;
@@ -585,10 +586,11 @@ onMounted(() => {
 
 /* --- Table Panel --- */
 .table-panel {
-  background: rgba(255, 255, 255, 0.04); /* Glassmorphism */
+  background: rgba(30, 30, 35, 0.6);
   backdrop-filter: blur(10px);
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px;
 }
 
 .panel-actions {
