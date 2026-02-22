@@ -31,20 +31,38 @@ const mapOption = ref({});
 
 const registerMap = async () => {
   try {
-    // Using a CDN for the China map GeoJSON
-    const { data } = await axios.get('https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/china.json');
+    const response = await fetch('https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/china.json');
+    const data = await response.json();
     echarts.registerMap('china', data);
   } catch (error) {
     console.error('Failed to load map data', error);
   }
 };
 
+const formatProvinceName = (name) => {
+  if (!name) return '';
+  if (name.includes('香港')) return '香港';
+  if (name.includes('澳门')) return '澳门';
+  if (name.includes('内蒙古')) return '内蒙古';
+  if (name.includes('西藏')) return '西藏';
+  if (name.includes('新疆')) return '新疆';
+  if (name.includes('广西')) return '广西';
+  if (name.includes('宁夏')) return '宁夏';
+  
+  return name.replace(/[省市]$/, '');
+};
+
 const fetchData = async () => {
   loading.value = true;
   try {
-    // 拆分传递开始和结束时间
     const [start, end] = dateRange.value || [];
-    const data = await getChinaStats(start, end);
+    const response = await getChinaStats(start, end);
+    
+    // Convert API data to ECharts format
+    const data = (response || []).map(item => ({
+      name: formatProvinceName(item.province),
+      value: item.visitors
+    }));
     
     mapOption.value = {
       backgroundColor: 'transparent',
