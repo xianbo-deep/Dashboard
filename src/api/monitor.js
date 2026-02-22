@@ -202,10 +202,8 @@ export function getChinaStats(start, end) {
     if (start) params.startTime = start;
     if (end) params.endTime = end;
   return apiClient.get('/admin/visitormap/chineseMap', { params }).then(data => {
-      return (data || []).map(item => ({
-          name: item.province || item.name, 
-          value: item.count
-      }));
+      // Return raw data to let the component handle specific formatting
+      return data || [];
   });
 }
 
@@ -315,7 +313,7 @@ export function getPageDetail(path) {
     const p3 = apiClient.get('/admin/analysis/pathDetail/device', { params: { path } });
     const p4 = apiClient.get('/admin/analysis/pathDetail/metric', { params: { path } });
 
-    return Promise.all([p1, p2, p3, p4]).then(([trendData, sourceData, deviceData, metricData]) => {
+    return Promise.all([p1, p2, p3, p4]).then(([trendData, countryData, deviceData, metricData]) => {
         
         const trend = (trendData || []).map(item => {
             const dateObj = new Date(item.date);
