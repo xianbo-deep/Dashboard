@@ -143,7 +143,7 @@ const fetchData = async () => {
           name: '来源',
           type: 'pie',
           radius: ['40%', '60%'],
-          data: data.sources,
+          data: data.countries,
           label: { show: false },
           labelLine: { show: false },
           itemStyle: {
