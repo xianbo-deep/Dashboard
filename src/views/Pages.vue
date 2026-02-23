@@ -369,7 +369,7 @@ onMounted(() => {
           </a-radio-group>
         </div>
         <div class="chart-wrapper">
-          <v-chart class="chart" :option="trendOption" autoresize />
+          <v-chart class="chart" :option="trendOption" autoresize style="height: 300px; width: 100%;" />
         </div>
       </div>
 
@@ -379,7 +379,7 @@ onMounted(() => {
           <div class="panel-title">访问排行</div>
         </div>
         <div class="chart-wrapper">
-          <v-chart class="chart" :option="rankOption" autoresize />
+          <v-chart class="chart" :option="rankOption" autoresize style="height: 300px; width: 100%;" />
         </div>
       </div>
     </div>
